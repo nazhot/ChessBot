@@ -1,10 +1,9 @@
 # Thanks to Job Vranish (https://spin.atomicobject.com/2016/08/26/makefile-c-projects/)
-TARGET_EXEC := chessbot
+TARGET_EXEC := temp
 CC = gcc
 
 BUILD_DIR := ./build
 SRC_DIRS := ./src
-TEST_DIR := ./tests
 
 # Find all the C and C++ files we want to compile
 # Note the single quotes around the * expressions. The shell will incorrectly expand these otherwise, but we want to send the * directly to the find command.
@@ -25,8 +24,8 @@ INC_FLAGS := $(addprefix -I,$(INC_DIRS))
 
 # The -MMD and -MP flags together generate Makefiles for us!
 # These files will have .d instead of .o as the output.
-CFLAGS := $(INC_FLAGS) -MMD -MP -Wall -flto -lpthread -g
-LDFLAGS := -lm -flto -lpthread -g
+CFLAGS := $(INC_FLAGS) -MMD -MP -Wall -g
+LDFLAGS := -lSDL2 -g
 
 # The final build step.
 $(BUILD_DIR)/$(TARGET_EXEC): $(OBJS)
@@ -46,36 +45,7 @@ clean:
 	printf "*\n!.gitignore" >> $(BUILD_DIR)/.gitignore 
 	make
 
-
-TEST_SRCS := $(shell find $(SRC_DIRS) -name '*.h')
-
-#want this to compile/run the unit tests, compile the main code, and compile/
-#run the functional tests
-.PHONY: test
-test:
-	@echo "Testing"
-
-#want this to compile/run the unit tests
-.PHONY: utest
-
-utest:
-	@echo "Unit testing"
-	
-#want this to compile/run the functional tests
-
-FTEST_INPUTS := $(shell find $(TEST_DIR)/functional -name '*.input')
-
-.PHONY: ftest
-
-ftest: $(FTEST_INPUTS)
-	@echo "Functional testing completed"
-
-%.input: FORCE
-	./build/chesbot --test $@ > $*.check
-
-FORCE:
-
-# Include the .d makefiles. The - at the front suppresses the errors of missing
-# Makefiles. Initially, all the .d files will be missing, and we don't want those
-# errors to show up.
--include $(DEPS)C = gcc
+.PHONY: run
+run:
+	make
+	$(BUILD_DIR)/$(TARGET_EXEC)
