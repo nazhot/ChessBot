@@ -4,8 +4,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 
-struct Board* board_initialize() {
-    struct Board *board = malloc( sizeof( struct Board ) );
+Board* board_initialize() {
+    Board *board = malloc( sizeof( Board ) );
     if ( !board ) {
         fprintf( stderr, "Could not initialize board!" );
         exit( 1 );
@@ -33,4 +33,18 @@ struct Board* board_initialize() {
     board->pieceMap[7][7] = ROOK;
 
     return board;
+}
+
+void board_getMovesForPiece( Board *board, char sourceSquare[2], Move *moveArray,
+                             uint moveArraySize ) {
+
+}
+
+void board_getMovesForSide( Board *board, bool whiteToMove, Move *moveArray, 
+                            uint moveArraySize ) {
+
+}
+
+void board_makeMove( Board *board, Move *move ) {
+
 }

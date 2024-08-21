@@ -1,7 +1,7 @@
 #ifndef CHESS_PIECES_
 #define CHESS_PIECES_
 
-enum Piece {
+typedef enum Piece {
     NONE,
     PAWN,
     KNIGHT,
@@ -9,6 +9,6 @@ enum Piece {
     ROOK,
     QUEEN,
     KING
-};
+} Piece;
 
 #endif
