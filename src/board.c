@@ -124,6 +124,11 @@ uint32_t board_getPieceDirectionMoves( Board *board, uint row, uint col ) {
             //need to check en passante
             break;
         case ROOK:
+            bool firstFound = false;
+            bool secondFound = false;
+            while ( !firstFound || !secondFound ) {
+                
+            }
             break;
         case KNIGHT:
             break;
