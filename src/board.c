@@ -19,6 +19,8 @@ Board* board_initialize() {
     
     board->whiteToMove = true;
     board->bitMap = 0b1111111111111111000000000000000000000000000000001111111111111111;
+    board->blackBitMap = 0b1111111111111111000000000000000000000000000000000000000000000000;
+    board->whiteBitMap = 0b0000000000000000000000000000000000000000000000001111111111111111;
     //need to find way to distinguish black vs. white
     board->pieceMap[0][0] = initializePiece( ROOK, false );
     board->pieceMap[0][1] = initializePiece( KNIGHT, false );
