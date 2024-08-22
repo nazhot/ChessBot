@@ -4,6 +4,18 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+typedef enum Direction {
+    NORTH,
+    NORTH_EAST,
+    EAST,
+    SOUTH_EAST,
+    SOUTH,
+    SOUTH_WEST,
+    WEST,
+    NORTH_WEST
+} Direction;
+
+
 static Piece initializePiece( PieceType type, bool isWhite ) {
     return ( Piece ) { .type = type,
                        .numMoves = 0,
@@ -92,19 +104,24 @@ void board_makeMove( Board *board, Move *move ) {
 
 }
 
+static void addDirectionMove( uint32_t *move, uint numSquares, Direction direction, bool capture ) {
+    int binaryToEncode = capture ? 8 + numSquares : numSquares;
+    *move |= binaryToEncode << ( direction * 4 );
+}
+
 uint32_t board_getPieceDirectionMoves( Board *board, uint row, uint col ) {
     Piece piece = board->pieceMap[row][col];
     if ( piece.type == NONE ) return 0;
     uint64_t oppositeBitMap = piece.isWhite ? board->blackBitMap : board->whiteBitMap;
     uint32_t moves = 0;
-    uint boardNumber = row * 8 + col;
+    int boardNumber = row * 8 + col;
     switch ( piece.type ) {
         case PAWN:
             boardNumber -= 9; //move position to check up and to the left
             if ( col > 0 ) {
                 //check if opponent is up and to the left
                 if ( oppositeBitMap >> boardNumber & 1 ) {
-                    moves |= 9 << 28; //magic number 9 is 1001 for move1, capture
+                    addDirectionMove( &moves, 1, NORTH_WEST, true );
                 }
             }
             ++boardNumber; //move position to the right
@@ -112,15 +129,15 @@ uint32_t board_getPieceDirectionMoves( Board *board, uint row, uint col ) {
             bool noPieceOneUp = !( board->bitMap >> boardNumber & 1 );
             bool noPieceTwoUp = ( noPieceOneUp ) && ( piece.numMoves == 0 ) && !( board->bitMap >> ( boardNumber - 8 ) & 1 );
             if ( noPieceTwoUp ) {
-                moves |= 2;
+                addDirectionMove( &moves, 2, NORTH, false );
             } else {
-                moves |= noPieceOneUp;
+                addDirectionMove( &moves, noPieceOneUp, NORTH, false );
             }
             if ( col < 7 ) {
                 ++boardNumber;
-                //check if opponent is up and to the left
+                //check if opponent is up and to the right
                 if ( oppositeBitMap >> boardNumber & 1 ) {
-                    moves |= 9 << 4;
+                    addDirectionMove( &moves, 1, NORTH_EAST, true ); 
                 }
             }
             //need to check en passante
@@ -128,8 +145,10 @@ uint32_t board_getPieceDirectionMoves( Board *board, uint row, uint col ) {
         case ROOK:
             bool firstFound = false;
             bool secondFound = false;
+            int firstBoardNumber = boardNumber - 8; //going up
+            int secondBoardNumber = boardNumber + 8; //going down
             while ( !firstFound || !secondFound ) {
-                
+                   
             }
             break;
         case KNIGHT:
