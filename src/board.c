@@ -109,6 +109,22 @@ static void addDirectionMove( uint32_t *move, uint numSquares, Direction directi
     *move |= binaryToEncode << ( direction * 4 );
 }
 
+void board_printDirectionMoves( uint32_t moves ) {
+    static char *directions[] = { [NORTH] = "N", [NORTH_EAST] = "NE", [EAST] = "E",
+                                 [SOUTH_EAST] = "SE", [SOUTH] = "S", [SOUTH_WEST] = "SW",
+                                 [WEST] = "W", [NORTH_WEST] = "NW" };
+    uint move;
+    bool capture;
+    uint distance;
+    for ( uint i = 0; i < 8; ++i ) {
+        move = moves >> ( i * 4 ) & 15;
+        if ( move == 0 ) continue;
+        capture = move >= 8;
+        distance = capture ? move - 8 : move;
+        printf( "Move up to %u %s%s", distance, directions[i], capture ? " (capture)\n" : "\n" );
+    }
+}
+
 uint32_t board_getPieceDirectionMoves( Board *board, uint row, uint col ) {
     Piece piece = board->pieceMap[row][col];
     if ( piece.type == NONE ) return 0;
@@ -147,8 +163,16 @@ uint32_t board_getPieceDirectionMoves( Board *board, uint row, uint col ) {
             bool secondFound = false;
             int firstBoardNumber = boardNumber - 8; //going up
             int secondBoardNumber = boardNumber + 8; //going down
+            uint firstCount = 0;
+            uint secondCount = 0;
             while ( !firstFound || !secondFound ) {
-                   
+                if ( !firstFound && ( board->bitMap >> boardNumber & 1 ) ) {
+                    bool opponent = oppositeBitMap >> boardNumber & 1;
+                    addDirectionMove( &moves, opponent ? firstCount + 1 : firstCount, NORTH, opponent ); 
+                }
+
+                ++firstCount;
+                ++secondCount;
             }
             break;
         case KNIGHT:
@@ -168,8 +192,8 @@ uint32_t board_getPieceDirectionMoves( Board *board, uint row, uint col ) {
 
 void board_print( Board *board ) {
     static char pieceSymbols[] = { [NONE] = ' ', [PAWN] = 'P', [KNIGHT] = 'N', 
-                                 [BISHOP] = 'B', [ROOK] = 'R', [QUEEN] = 'Q',
-                                 [KING] = 'K' };
+                                   [BISHOP] = 'B', [ROOK] = 'R', [QUEEN] = 'Q',
+                                   [KING] = 'K' };
     printf( "---------------------------------\n" );
     for ( uint row = 0; row < 8; ++row ) {
         printf( "|" );
