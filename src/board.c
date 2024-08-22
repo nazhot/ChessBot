@@ -45,6 +45,10 @@ static Piece* board_getPieceFromSourceSquare( Board *board, const char row, cons
    return &board->pieceMap[row][col];
 }
 
+static uint64_t board_getBlackBitMap( Board *board ) {
+    return board->bitMap ^ board->whiteBitMap;
+}
+
 void board_getMovesForPiece( Board *board, char sourceSquare[2], Move *moveArray,
                              uint moveArraySize ) {
     Piece *piece = board_getPieceFromSourceSquare( board, sourceSquare[0], sourceSquare[1] );
@@ -84,4 +88,54 @@ void board_getMovesForSide( Board *board, bool whiteToMove, Move *moveArray,
 
 void board_makeMove( Board *board, Move *move ) {
 
+}
+
+uint32_t board_getPieceDirectionMoves( Board *board, uint row, uint col ) {
+    Piece piece = board->pieceMap[row][col];
+    if ( piece.type == NONE ) return 0;
+    uint64_t oppositeBitMap = piece.isWhite ? board->blackBitMap : board->whiteBitMap;
+    uint32_t moves = 0;
+    uint boardNumber = row * 8 + col;
+    switch ( piece.type ) {
+        case PAWN:
+            boardNumber -= 9; //move position to check up and to the left
+            if ( col > 0 ) {
+                //check if opponent is up and to the left
+                if ( oppositeBitMap >> boardNumber & 1 ) {
+                    moves |= 9 << 28; //magic number 9 is 1001 for move1, capture
+                }
+            }
+            ++boardNumber; //move position to the right
+            //check if anyone is directly up
+            bool noPieceOneUp = !( board->bitMap >> boardNumber & 1 );
+            bool noPieceTwoUp = ( noPieceOneUp ) && ( piece.numMoves == 0 ) && !( board->bitMap >> ( boardNumber - 8 ) & 1 );
+            if ( noPieceTwoUp ) {
+                moves |= 2;
+            } else {
+                moves |= noPieceOneUp;
+            }
+            if ( col < 7 ) {
+                ++boardNumber;
+                //check if opponent is up and to the left
+                if ( oppositeBitMap >> boardNumber & 1 ) {
+                    moves |= 9 << 4;
+                }
+            }
+            //need to check en passante
+            break;
+        case ROOK:
+            break;
+        case KNIGHT:
+            break;
+        case QUEEN:
+            break;
+        case BISHOP:
+            break;
+        case KING:
+            break;
+        default:
+            break;
+    }
+
+    return moves;
 }
