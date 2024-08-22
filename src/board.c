@@ -42,6 +42,10 @@ Board* board_initialize() {
     board->pieceMap[0][5] = initializePiece( BISHOP, false );
     board->pieceMap[0][6] = initializePiece( KNIGHT, false );
     board->pieceMap[0][7] = initializePiece( ROOK, false );
+    for ( uint i = 0; i < 8; ++i ) {
+        board->pieceMap[1][i] = initializePiece( PAWN, false );
+        board->pieceMap[6][i] = initializePiece( PAWN, true );
+    }
 
     board->pieceMap[7][0] = initializePiece( ROOK, true );
     board->pieceMap[7][1] = initializePiece( KNIGHT, true );
@@ -57,10 +61,6 @@ Board* board_initialize() {
 
 static Piece* board_getPieceFromSourceSquare( Board *board, const char row, const char col ) {
    return &board->pieceMap[row][col];
-}
-
-static uint64_t board_getBlackBitMap( Board *board ) {
-    return board->bitMap ^ board->whiteBitMap;
 }
 
 void board_getMovesForPiece( Board *board, char sourceSquare[2], Move *moveArray,
@@ -164,4 +164,21 @@ uint32_t board_getPieceDirectionMoves( Board *board, uint row, uint col ) {
     }
 
     return moves;
+}
+
+void board_print( Board *board ) {
+    static char pieceSymbols[] = { [NONE] = ' ', [PAWN] = 'P', [KNIGHT] = 'N', 
+                                 [BISHOP] = 'B', [ROOK] = 'R', [QUEEN] = 'Q',
+                                 [KING] = 'K' };
+    printf( "---------------------------------\n" );
+    for ( uint row = 0; row < 8; ++row ) {
+        printf( "|" );
+        for ( uint col = 0; col < 8; ++col ) {
+            Piece piece = board->pieceMap[row][col];
+            char symbol = pieceSymbols[piece.type];
+            if ( piece.isWhite ) symbol += 32; 
+            printf( " %c |", symbol );
+        }
+        printf( "\n---------------------------------\n" );
+    }
 }

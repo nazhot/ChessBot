@@ -32,7 +32,7 @@ void board_getMovesForPiece( Board *board, char sourceSquare[2], Move *moveArray
 void board_getMovesForSide( Board *board, bool whiteToMove, Move *moveArray, 
                             uint moveArraySize );
 void board_makeMove( Board *board, Move *move );
-
 uint32_t board_getPieceDirectionMoves( Board *board, uint row, uint col );
+void board_print( Board *board );
 
 #endif
