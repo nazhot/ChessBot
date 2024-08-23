@@ -3,6 +3,10 @@
 #include <stdlib.h>
 #include <inttypes.h>
 
+uint64_t kingLookupTable[64] = {0};
+uint64_t knightLookupTable[64] = {0};
+char hvdLookupTable[256][8] = {0}; //first index: binary representation of row. second index: position of piece being checked
+
 
 static void printMoves( uint64_t moves, uint indexToCheck, char symbol ) {
     printf( "%u\n", indexToCheck );
@@ -28,7 +32,6 @@ static void addMove( int row, int col, uint64_t *moves ) {
 }
 
 static void initializeKingLookupTable() {
-    uint64_t kingLookup[64] = {0};
     uint64_t moves;
     int row, col;
     for ( uint i = 0; i < 64; ++i ) {
@@ -41,12 +44,11 @@ static void initializeKingLookupTable() {
             }
         }
         //printMoves( moves, i, 'K' );
-        kingLookup[i] = moves;
+        kingLookupTable[i] = moves;
     }
 }
 
 static void initializeKnightLookupTable() {
-    uint64_t knightLookup[64] = {0};
     uint64_t moves;
     int row, col, tempRow, tempCol;
     for ( uint i = 0; i < 64; ++i ) {
@@ -81,12 +83,11 @@ static void initializeKnightLookupTable() {
         tempRow -= 2;
         addMove( tempRow, tempCol, &moves );
 
-        knightLookup[i] = moves;
+        knightLookupTable[i] = moves;
     }
 }
 
 static void initializeHVLookupTable() {
-    char hvLookup[256][8] = {0}; //first index: binary representation of row. second index: position of piece being checked
     char moves;
     for ( uint i = 0; i < 256; ++i ) {
         for ( uint j = 0; j < 8; ++j ) {
@@ -107,7 +108,7 @@ static void initializeHVLookupTable() {
                     break;
                 }
             }
-            hvLookup[i][j] = moves;
+            hvdLookupTable[i][j] = moves;
         }
     }
 
@@ -117,4 +118,59 @@ void initializeLookupTables() {
     initializeHVLookupTable();
     initializeKnightLookupTable();
     initializeKingLookupTable();
+}
+
+
+
+void lookup_setHorizontalMoves( uint64_t *moves, char rowBitMap, uint rowNumber,
+                                uint colNumber ) {
+    char rowMoveBitMap = hvdLookupTable[rowBitMap][colNumber];
+    if ( rowMoveBitMap == 0 ) { //no moves, which should mean that there is no piece at the specified col number?
+        return;
+    }
+    *moves |= ( ( uint64_t ) rowMoveBitMap ) << ( ( 7 - rowNumber ) * 8 );
+}
+
+void lookup_setVerticalMoves( uint64_t *moves, char colBitMap, uint rowNumber,
+                              uint colNumber ) {
+    char colMoveBitMap = hvdLookupTable[colBitMap][rowNumber];
+    if ( colMoveBitMap == 0 ) { //no moves, which should mean that there is no piece at the specified col number?
+        return;
+    }
+    for ( uint row = 0; row < 8; ++row ) {
+        if ( colMoveBitMap >> ( 7 - row ) & 1 ) {
+            addMove( row, colNumber, moves );
+        }
+    }
+}
+
+void lookup_setDiagonalMoves( uint64_t *moves, char diaBitMapUpRight, 
+                              char diaBitMapDownRight, uint rowNumber, uint colNumber ) {
+    char diaMoveBitMap = hvdLookupTable[diaBitMapUpRight][colNumber]; //diagonals going up and to the right
+    uint numSquares = abs( ( int ) rowNumber - ( int ) colNumber ) + 1;
+    uint firstRow = rowNumber;
+    uint firstCol = colNumber;
+    while ( firstRow < 7 && firstCol > 0 ) {
+        ++firstRow;
+        --firstCol;
+    }
+    for ( uint index = 0; index < numSquares; ++index ) {
+        if ( diaMoveBitMap >> ( 7 - index ) & 1 ) {
+            addMove( firstRow--, firstCol++, moves );
+        }
+    }
+
+    diaMoveBitMap = hvdLookupTable[diaBitMapDownRight][colNumber];
+    numSquares = abs( ( int ) ( 7 - rowNumber ) - ( int ) colNumber ) + 1;
+    firstRow = rowNumber;
+    firstCol = colNumber;
+    while ( firstRow > 0 && firstCol > 0 ) {
+        --firstRow;
+        --firstCol;
+    }
+    for ( uint index = 0; index < numSquares; ++index ) {
+        if ( diaMoveBitMap >> ( 7 - index ) & 1 ) {
+            addMove( firstRow++, firstCol++, moves );
+        }
+    }
 }
