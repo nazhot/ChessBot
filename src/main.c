@@ -9,7 +9,7 @@ int main( int argc, char *argv[] ) {
     //uint32_t moves = board_getPieceDirectionMoves( board, 6, 1 );
     //board_printDirectionMoves( moves );
 
-    //initializeLookupTables();
+    initializeLookupTables();
 
     return 0;
 }
