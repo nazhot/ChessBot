@@ -33,6 +33,15 @@ typedef struct Move {
 //the places it could jump to. XORing with the piece's bit map would remove the places it cannot jump,
 //and ANDing it with the opponent's bit map would show the capture points
 typedef struct Board {
+    char bitMapRows[8];
+    char bitMapCols[8];
+    char bitMapDias[8];
+    char whiteBitMapRows[8];
+    char whiteBitMapCols[8];
+    char whiteBitMapDias[8];
+    char blackBitMapRows[8];
+    char blackBitMapCols[8];
+    char blackBitMapDias[8];
     uint64_t bitMap; //what parts of the board are occupied, each square is 1 bit
     uint64_t whiteBitMap;
     uint64_t blackBitMap;

@@ -188,8 +188,6 @@ void board_getPieceDirectionMoves( Board *board, uint row, uint col,
         default:
             break;
     }
-
-    return moves;
 }
 
 void board_print( Board *board ) {
