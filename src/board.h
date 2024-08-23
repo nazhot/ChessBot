@@ -33,7 +33,9 @@ void board_getMovesForSide( Board *board, bool whiteToMove, Move *moveArray,
                             uint moveArraySize );
 void board_makeMove( Board *board, Move *move );
 void board_printDirectionMoves( uint32_t moves );
-uint32_t board_getPieceDirectionMoves( Board *board, uint row, uint col );
+//return value has bit set to 1 if 
+void board_getPieceDirectionMoves( Board *board, uint row, uint col,
+                                   uint64_t *moveBitMap, uint64_t *captureBitMap );
 void board_print( Board *board );
 
 #endif

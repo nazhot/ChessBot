@@ -125,9 +125,10 @@ void board_printDirectionMoves( uint32_t moves ) {
     }
 }
 
-uint32_t board_getPieceDirectionMoves( Board *board, uint row, uint col ) {
+void board_getPieceDirectionMoves( Board *board, uint row, uint col,
+                                       uint64_t *moveBitMap, uint64_t *captureBitMap ) {
     Piece piece = board->pieceMap[row][col];
-    if ( piece.type == NONE ) return 0;
+    if ( piece.type == NONE ) return;
     uint64_t oppositeBitMap = piece.isWhite ? board->blackBitMap : board->whiteBitMap;
     uint32_t moves = 0;
     int boardNumber = row * 8 + col;
@@ -137,23 +138,24 @@ uint32_t board_getPieceDirectionMoves( Board *board, uint row, uint col ) {
             if ( col > 0 ) {
                 //check if opponent is up and to the left
                 if ( oppositeBitMap >> boardNumber & 1 ) {
-                    addDirectionMove( &moves, 1, NORTH_WEST, true );
+                    *moveBitMap ^= 1 << ( 81 - boardNumber );
+                    *captureBitMap ^= 1 << ( 81 - boardNumber );
+                    //addDirectionMove( &moves, 1, NORTH_WEST, true );
                 }
             }
             ++boardNumber; //move position to the right
             //check if anyone is directly up
             bool noPieceOneUp = !( board->bitMap >> boardNumber & 1 );
             bool noPieceTwoUp = ( noPieceOneUp ) && ( piece.numMoves == 0 ) && !( board->bitMap >> ( boardNumber - 8 ) & 1 );
-            if ( noPieceTwoUp ) {
-                addDirectionMove( &moves, 2, NORTH, false );
-            } else {
-                addDirectionMove( &moves, noPieceOneUp, NORTH, false );
-            }
+            *moveBitMap ^= noPieceOneUp << ( 81 - boardNumber );
+            *moveBitMap ^= noPieceTwoUp << ( 81 - boardNumber );
             if ( col < 7 ) {
                 ++boardNumber;
                 //check if opponent is up and to the right
                 if ( oppositeBitMap >> boardNumber & 1 ) {
-                    addDirectionMove( &moves, 1, NORTH_EAST, true ); 
+                    *moveBitMap ^= 1 << ( 81 - boardNumber );
+                    *captureBitMap ^= 1 << ( 81 - boardNumber );
+                    //addDirectionMove( &moves, 1, NORTH_EAST, true ); 
                 }
             }
             //need to check en passante
