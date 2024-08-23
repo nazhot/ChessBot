@@ -13,6 +13,25 @@ typedef struct Move {
     char sourceSquare[2];
 } Move;
 
+
+//consider moving each bitmap to be (3) char[8]'s
+//there would be one for rows, one for columns, one for diagonals
+//this would allow move calculation to be a lookup value, rather than a looping
+//calculation every time
+//there would be a size 256 array for each possible combination of pieces in row/col/diagonal
+//that would point to another array for each possible position the piece is in,
+//that would then point to the valid moves for that piece
+//
+//to figure out capturing, I think you would do the initial lookup with the bit maps for
+//all pieces, and then just have to do two checks, one for each side of the row/col/diagonal
+//to see if the piece it ran into was an opponent? Idk, that may be the most complicated part
+//
+//then lookup tables would have a lot of overlap: rows/cols can be used for rook/queen,
+//diagonals for bishop/queen, and there can be specific ones for knights, pawns, and the king
+//which should also help a lot with the calculation. For the knight I imagine you
+//would just make a size 81 array, for each possible position on the board, and it just gives back
+//the places it could jump to. XORing with the piece's bit map would remove the places it cannot jump,
+//and ANDing it with the opponent's bit map would show the capture points
 typedef struct Board {
     uint64_t bitMap; //what parts of the board are occupied, each square is 1 bit
     uint64_t whiteBitMap;
