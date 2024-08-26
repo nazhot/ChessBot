@@ -14,7 +14,7 @@ static void printMoves( uint64_t moves, uint indexToCheck, char symbol ) {
         for ( uint c = 0; c < 8; ++c ) {
             uint index = r * 8  + c;
             if ( index == indexToCheck ) {
-                printf( "K" );
+                printf( "%c", symbol );
             } else {
                 printf( "%i", ( int ) ( ( moves >> ( 63 - index ) ) & 1 ) ); 
             }
@@ -144,33 +144,41 @@ void lookup_setVerticalMoves( uint64_t *moves, char colBitMap, uint rowNumber,
     }
 }
 
-void lookup_setDiagonalMoves( uint64_t *moves, char diaBitMapUpRight, 
-                              char diaBitMapDownRight, uint rowNumber, uint colNumber ) {
-    char diaMoveBitMap = hvdLookupTable[diaBitMapUpRight][colNumber]; //diagonals going up and to the right
-    uint numSquares = abs( ( int ) rowNumber - ( int ) colNumber ) + 1;
-    uint firstRow = rowNumber;
-    uint firstCol = colNumber;
-    while ( firstRow < 7 && firstCol > 0 ) {
-        ++firstRow;
-        --firstCol;
+void lookup_setDiagonalMoves( uint64_t *moves, unsigned char diaBitMapUpRight, 
+                              unsigned char diaBitMapDownRight, uint rowNumber, uint colNumber ) {
+    uint numSquares = rowNumber + colNumber + 1;
+    if ( numSquares > 7 ) {
+        numSquares = 16 - numSquares;
     }
+    uint rowDiff = 7 - rowNumber;
+    uint colDiff = colNumber;
+    uint offset = rowDiff < colDiff ? rowDiff : colDiff;
+    uint firstRow = rowNumber + offset;
+    uint firstCol = colNumber - offset;
+    char diaMoveBitMap = hvdLookupTable[diaBitMapUpRight][offset]; //diagonals going up and to the right
+
     for ( uint index = 0; index < numSquares; ++index ) {
         if ( diaMoveBitMap >> ( 7 - index ) & 1 ) {
-            addMove( firstRow--, firstCol++, moves );
+            addMove( firstRow, firstCol, moves );
         }
+        --firstRow;
+        firstCol++;
     }
 
-    diaMoveBitMap = hvdLookupTable[diaBitMapDownRight][colNumber];
-    numSquares = abs( ( int ) ( 7 - rowNumber ) - ( int ) colNumber ) + 1;
-    firstRow = rowNumber;
-    firstCol = colNumber;
-    while ( firstRow > 0 && firstCol > 0 ) {
-        --firstRow;
-        --firstCol;
-    }
+    numSquares = 8 - abs( ( int ) rowNumber - ( int ) colNumber );
+    rowDiff = rowNumber;
+    colDiff = colNumber;
+    offset = rowDiff < colDiff ? rowDiff : colDiff;
+    firstRow = rowNumber - offset;
+    firstCol = colNumber - offset;
+    diaMoveBitMap = hvdLookupTable[diaBitMapDownRight][offset];
+
     for ( uint index = 0; index < numSquares; ++index ) {
         if ( diaMoveBitMap >> ( 7 - index ) & 1 ) {
-            addMove( firstRow++, firstCol++, moves );
+            addMove( firstRow, firstCol, moves );
         }
+        ++firstRow;
+        ++firstCol;
     }
+    printMoves( *moves, rowNumber * 8 + colNumber, 'B' );
 }

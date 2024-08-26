@@ -10,6 +10,10 @@ int main( int argc, char *argv[] ) {
     //board_printDirectionMoves( moves );
 
     initializeLookupTables();
+    uint64_t moves = 0;
+    char diaBitMapUpRight = 0b01010000;
+    char diaBitMapDownRight = 0b11001000;
+    lookup_setDiagonalMoves( &moves, diaBitMapUpRight, diaBitMapDownRight, 4, 4 );
 
     return 0;
 }
