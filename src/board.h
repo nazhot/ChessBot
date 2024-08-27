@@ -35,13 +35,16 @@ typedef struct Move {
 typedef struct Board {
     char bitMapRows[8];
     char bitMapCols[8];
-    char bitMapDias[8];
+    char bitMapDiasUpRight[8];
+    char bitMapDiasDownRight[8];
     char whiteBitMapRows[8];
     char whiteBitMapCols[8];
-    char whiteBitMapDias[8];
+    char whiteBitMapDiasUpRight[8];
+    char whiteBitMapDiasDownRight[8];
     char blackBitMapRows[8];
     char blackBitMapCols[8];
-    char blackBitMapDias[8];
+    char blackBitMapDiasUpRight[8];
+    char blackBitMapDiasDownRight[8];
     uint64_t bitMap; //what parts of the board are occupied, each square is 1 bit
     uint64_t whiteBitMap;
     uint64_t blackBitMap;

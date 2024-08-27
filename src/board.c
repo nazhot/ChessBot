@@ -206,3 +206,4 @@ void board_print( Board *board ) {
         printf( "\n---------------------------------\n" );
     }
 }
+

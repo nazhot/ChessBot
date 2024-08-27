@@ -1,3 +1,4 @@
+#include "board.h"
 #include "lookups.h"
 #include <stdio.h>
 #include <stdlib.h>
@@ -180,5 +181,36 @@ void lookup_setDiagonalMoves( uint64_t *moves, unsigned char diaBitMapUpRight,
         ++firstRow;
         ++firstCol;
     }
-    printMoves( *moves, rowNumber * 8 + colNumber, 'B' );
 }
+
+void getKingMoves( uint row, uint col, uint64_t *moves ) {
+    if ( row > 7 || col > 7 ) return;
+    *moves = kingLookupTable[row * 8 + col];
+}
+
+void getQueenMoves( Board *board, uint row, uint col, uint64_t *moves ) {
+    if ( row > 7 || col > 7 ) return;
+    lookup_setVerticalMoves( moves, board->bitMapCols[col], row, col );
+    lookup_setHorizontalMoves( moves, board->bitMapRows[row], row, col );
+    //lookup_setDiagonalMoves( moves, board->bitMapDiasUpRight, board->bitMapDiasDownRight,
+    //                         row, col );
+}
+
+void getRookMoves( Board *board, uint row, uint col, uint64_t *moves ) {
+    if ( row > 7 || col > 7 ) return;
+    lookup_setVerticalMoves( moves, board->bitMapCols[col], row, col );
+    lookup_setHorizontalMoves( moves, board->bitMapRows[row], row, col );
+}
+
+void getBishopMoves( Board *board, uint row, uint col, uint64_t *moves ) {
+    if ( row > 7 || col > 7 ) return;
+    //lookup_setDiagonalMoves( moves, board->bitMapDiasUpRight, board->bitMapDiasDownRight,
+    //                         row, col );
+}
+
+void getKnightMoves( Board *board, uint row, uint col, uint64_t *moves ) {
+    if ( row > 7 || col > 7 ) return;
+    *moves = knightLookupTable[row * 8 + col];
+}
+
+void getPawnMoves(){};
