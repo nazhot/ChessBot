@@ -1,5 +1,6 @@
 #include <assert.h>
 #include "board.h"
+#include "lookups.h"
 #include "pieces.h"
 #include <stdio.h>
 #include <stdlib.h>
@@ -204,6 +205,54 @@ void board_print( Board *board ) {
             printf( " %c |", symbol );
         }
         printf( "\n---------------------------------\n" );
+    }
+}
+
+static void board_getCapturesFromMoves( Board *board, uint64_t *captures, 
+                                        uint64_t *moves, bool whiteToMove ) {
+    uint64_t opponentPieceBitMap = whiteToMove ? board->blackBitMap : board->whiteBitMap;
+    uint64_t friendlyPieceBitMap = whiteToMove ? board->whiteBitMap : board->blackBitMap;
+    *captures = *moves & opponentPieceBitMap; //bits are set on the squares where captures occur
+    *moves = *moves ^ friendlyPieceBitMap & *moves; 
+}
+
+void board_printMovesCount( Board *board ) {
+    uint64_t moves;
+    uint numMoves;
+    char symbol;
+    for ( uint row = 0; row < 8; ++row ) {
+        for ( uint col = 0; col < 8; ++col ) {
+            moves = 0;
+            switch( board->pieceMap[row][col].type ) {
+                case NONE:
+                case PAWN:
+                    continue;
+                case KNIGHT:
+                    getKnightMoves( row, col, &moves );
+                    symbol = 'N';
+                    break;
+                case QUEEN:
+                    getQueenMoves( board, row, col, &moves );
+                    symbol = 'Q';
+                    break;
+                case BISHOP:
+                    getBishopMoves( board, row, col, &moves );
+                    symbol = 'B';
+                    break;
+                case KING:
+                    getKingMoves( row, col, &moves );
+                    symbol = 'K';
+                    break;
+                case ROOK:
+                    getRookMoves( board, row, col, &moves );
+                    symbol = 'R';
+                    break;
+            }
+            numMoves = __builtin_popcount( moves ); 
+            printf( "%c%c (%u, %u): %u\n", board->pieceMap[row][col].isWhite ? 'w' : 'b',
+                                           symbol, row, col, numMoves );
+            //printMoves( moves, row * 8 + col, symbol );
+        }
     }
 }
 

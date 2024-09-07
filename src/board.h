@@ -69,5 +69,6 @@ void board_getPieceDirectionMoves( Board *board, uint row, uint col,
                                    uint64_t *moveBitMap, uint64_t *captureBitMap );
 void board_print( Board *board );
 void board_decideAndMakeMove( Board *board );
+void board_printMovesCount( Board *board );
 
 #endif

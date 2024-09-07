@@ -14,6 +14,7 @@ int main( int argc, char *argv[] ) {
     char diaBitMapUpRight = 0b01010000;
     char diaBitMapDownRight = 0b11001000;
     lookup_setDiagonalMoves( &moves, diaBitMapUpRight, diaBitMapDownRight, 4, 4 );
+    board_printMovesCount( board );
 
     return 0;
 }

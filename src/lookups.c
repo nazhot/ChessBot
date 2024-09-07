@@ -24,7 +24,7 @@ uint rcToUpRight[8][8] = { { 0, 1, 2, 3, 4, 5, 6, 7 },
                               { 1, 2, 3, 4, 5, 6, 7, 8 },
                               { 0, 1, 2, 3, 4, 5, 6, 7 } };
 
-static void printMoves( uint64_t moves, uint indexToCheck, char symbol ) {
+void printMoves( uint64_t moves, uint indexToCheck, char symbol ) {
     printf( "%u\n", indexToCheck );
     for ( uint r = 0; r < 8; ++r ) {
         for ( uint c = 0; c < 8; ++c ) {
@@ -228,7 +228,7 @@ void getBishopMoves( Board *board, uint row, uint col, uint64_t *moves ) {
                              row, col );
 }
 
-void getKnightMoves( Board *board, uint row, uint col, uint64_t *moves ) {
+void getKnightMoves( uint row, uint col, uint64_t *moves ) {
     if ( row > 7 || col > 7 ) return;
     *moves = knightLookupTable[row * 8 + col];
 }
