@@ -207,3 +207,10 @@ void board_print( Board *board ) {
     }
 }
 
+void board_decideAndMakeMove( Board *board ) {
+    //get all of the moves of the currently moving side
+    //do whatever algorithm to determine which move to do
+    //make the move
+    //update all the pieces within board
+    //update all of the various bit fields within board
+}

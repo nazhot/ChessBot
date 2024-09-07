@@ -7,7 +7,22 @@
 uint64_t kingLookupTable[64] = {0};
 uint64_t knightLookupTable[64] = {0};
 char hvdLookupTable[256][8] = {0}; //first index: binary representation of row. second index: position of piece being checked
-
+uint rcToUpRight[8][8] = { { 0, 1, 2, 3, 4, 5, 6, 7 },
+                           { 1, 2, 3, 4, 5, 6, 7, 8 },
+                           { 2, 3, 4, 5, 6, 7, 8, 9 },
+                           { 3, 4, 5, 6, 7, 8, 9, 10 },
+                           { 4, 5, 6, 7, 8, 9, 10, 11 },
+                           { 5, 6, 7, 8, 9, 10, 11, 12 },
+                           { 6, 7, 8, 9, 10, 11, 12, 13 },
+                           { 7, 8, 9, 10, 11, 12, 13, 14 } };
+ uint rcToDownRight[8][8] = { { 7, 8, 9, 10, 11, 12, 13, 14 },
+                              { 6, 7, 8, 9, 10, 11, 12, 13 },
+                              { 5, 6, 7, 8, 9, 10, 11, 12 },
+                              { 4, 5, 6, 7, 8, 9, 10, 11 },
+                              { 3, 4, 5, 6, 7, 8, 9, 10 },
+                              { 2, 3, 4, 5, 6, 7, 8, 9 },
+                              { 1, 2, 3, 4, 5, 6, 7, 8 },
+                              { 0, 1, 2, 3, 4, 5, 6, 7 } };
 
 static void printMoves( uint64_t moves, uint indexToCheck, char symbol ) {
     printf( "%u\n", indexToCheck );
@@ -87,6 +102,7 @@ static void initializeKnightLookupTable() {
         knightLookupTable[i] = moves;
     }
 }
+
 
 static void initializeHVLookupTable() {
     char moves;
@@ -192,8 +208,9 @@ void getQueenMoves( Board *board, uint row, uint col, uint64_t *moves ) {
     if ( row > 7 || col > 7 ) return;
     lookup_setVerticalMoves( moves, board->bitMapCols[col], row, col );
     lookup_setHorizontalMoves( moves, board->bitMapRows[row], row, col );
-    //lookup_setDiagonalMoves( moves, board->bitMapDiasUpRight, board->bitMapDiasDownRight,
-    //                         row, col );
+    lookup_setDiagonalMoves( moves, board->bitMapDiasUpRight[rcToUpRight[row][col]], 
+                             board->bitMapDiasDownRight[rcToDownRight[row][col]],
+                             row, col );
 }
 
 void getRookMoves( Board *board, uint row, uint col, uint64_t *moves ) {
@@ -204,8 +221,11 @@ void getRookMoves( Board *board, uint row, uint col, uint64_t *moves ) {
 
 void getBishopMoves( Board *board, uint row, uint col, uint64_t *moves ) {
     if ( row > 7 || col > 7 ) return;
-    //lookup_setDiagonalMoves( moves, board->bitMapDiasUpRight, board->bitMapDiasDownRight,
-    //                         row, col );
+    uint diaUpRightIndex = ( row + col ); //
+    uint diaDownRightIndex;
+    lookup_setDiagonalMoves( moves, board->bitMapDiasUpRight[rcToUpRight[row][col]], 
+                             board->bitMapDiasDownRight[rcToDownRight[row][col]],
+                             row, col );
 }
 
 void getKnightMoves( Board *board, uint row, uint col, uint64_t *moves ) {
