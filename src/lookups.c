@@ -56,10 +56,12 @@ static void initializeKingLookupTable() {
         col = i % 8;
         for ( int rOffset = -1; rOffset <= 1; ++rOffset ) {
             for ( int cOffset = -1; cOffset <= 1; ++cOffset ) {
+                if ( rOffset == 0 && cOffset == 0 ) {
+                    continue;
+                }
                 addMove( row + rOffset, col + cOffset, &moves );
             }
         }
-        //printMoves( moves, i, 'K' );
         kingLookupTable[i] = moves;
     }
 }

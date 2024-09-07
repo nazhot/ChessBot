@@ -248,7 +248,10 @@ void board_printMovesCount( Board *board ) {
                     symbol = 'R';
                     break;
             }
-            numMoves = __builtin_popcount( moves ); 
+            numMoves = 0;
+            for ( uint i = 0; i < 64; ++i ) {
+                numMoves += moves >> i & 1 ? 1 : 0;
+            }
             printf( "%c%c (%u, %u): %u\n", board->pieceMap[row][col].isWhite ? 'w' : 'b',
                                            symbol, row, col, numMoves );
             //printMoves( moves, row * 8 + col, symbol );
