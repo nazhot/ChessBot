@@ -209,9 +209,9 @@ void board_print( Board *board ) {
 }
 
 static void board_getCapturesFromMoves( Board *board, uint64_t *captures, 
-                                        uint64_t *moves, bool whiteToMove ) {
-    uint64_t opponentPieceBitMap = whiteToMove ? board->blackBitMap : board->whiteBitMap;
-    uint64_t friendlyPieceBitMap = whiteToMove ? board->whiteBitMap : board->blackBitMap;
+                                        uint64_t *moves, bool isWhite ) {
+    uint64_t opponentPieceBitMap = isWhite ? board->blackBitMap : board->whiteBitMap;
+    uint64_t friendlyPieceBitMap = isWhite ? board->whiteBitMap : board->blackBitMap;
     *captures = *moves & opponentPieceBitMap; //bits are set on the squares where captures occur
     *moves = *moves ^ friendlyPieceBitMap & *moves; 
 }
@@ -267,7 +267,7 @@ void board_printMovesCount( Board *board ) {
                     symbol = 'R';
                     break;
             }
-            board_getCapturesFromMoves( board, &captures, &moves, board->whiteToMove);
+            board_getCapturesFromMoves( board, &captures, &moves, board->pieceMap[row][col].isWhite );
             numMoves = 0;
             numCaptures = 0;
             for ( uint i = 0; i < 64; ++i ) {
