@@ -2,8 +2,13 @@
 #include <stdlib.h>
 #include "board.h"
 #include "lookups.h"
+#include "server.h"
 
 int main( int argc, char *argv[] ) {
+
+    //int serverFD = server_startLocal();
+    //server_listen();
+
     Board *board = board_initialize();
     board_print( board );
     //uint32_t moves = board_getPieceDirectionMoves( board, 6, 1 );

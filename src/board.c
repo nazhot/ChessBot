@@ -216,13 +216,32 @@ static void board_getCapturesFromMoves( Board *board, uint64_t *captures,
     *moves = *moves ^ friendlyPieceBitMap & *moves; 
 }
 
+void board_printAlgebraicMoves( uint64_t moves ) {
+    printf( "(" );
+    bool firstMove = true;
+    for ( uint row = 0; row < 8; ++row ) {
+        for ( uint col = 0; col < 8; ++col ) {
+            uint index = row * 8 + col;
+            if ( moves >> ( 63- index ) & 1 ) {
+                if ( !firstMove ) {
+                    printf( "," );
+                }
+                printf( "%c%u", col + 97, 8 - row );
+                firstMove = false;
+            }
+        }
+    }
+    printf( ")" );
+}
+
 void board_printMovesCount( Board *board ) {
-    uint64_t moves;
-    uint numMoves;
+    uint64_t moves, captures;
+    uint numMoves, numCaptures;
     char symbol;
     for ( uint row = 0; row < 8; ++row ) {
         for ( uint col = 0; col < 8; ++col ) {
             moves = 0;
+            captures = 0;
             switch( board->pieceMap[row][col].type ) {
                 case NONE:
                 case PAWN:
@@ -248,12 +267,21 @@ void board_printMovesCount( Board *board ) {
                     symbol = 'R';
                     break;
             }
+            board_getCapturesFromMoves( board, &captures, &moves, board->whiteToMove);
             numMoves = 0;
+            numCaptures = 0;
             for ( uint i = 0; i < 64; ++i ) {
                 numMoves += moves >> i & 1 ? 1 : 0;
+                numCaptures += captures >> i & 1 ? 1 : 0;
             }
-            printf( "%c%c (%u, %u): %u\n", board->pieceMap[row][col].isWhite ? 'w' : 'b',
+            printf( "Moves: %c%c (%u, %u): %u", board->pieceMap[row][col].isWhite ? 'w' : 'b',
                                            symbol, row, col, numMoves );
+            board_printAlgebraicMoves( moves );
+            printf( "\n" );
+            printf( "Captures: %c%c (%u, %u): %u", board->pieceMap[row][col].isWhite ? 'w' : 'b',
+                                           symbol, row, col, numCaptures );
+            board_printAlgebraicMoves( captures );
+            printf( "\n" );
             //printMoves( moves, row * 8 + col, symbol );
         }
     }
