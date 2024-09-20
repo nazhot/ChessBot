@@ -24,6 +24,8 @@ uint rcToUpRight[8][8] = { { 0, 1, 2, 3, 4, 5, 6, 7 },
                               { 1, 2, 3, 4, 5, 6, 7, 8 },
                               { 0, 1, 2, 3, 4, 5, 6, 7 } };
 
+uint64_t pawnLookupTable[64][2] = {0};
+
 void printMoves( uint64_t moves, uint indexToCheck, char symbol ) {
     printf( "%u\n", indexToCheck );
     for ( uint r = 0; r < 8; ++r ) {
@@ -44,6 +46,33 @@ static void addMove( int row, int col, uint64_t *moves ) {
     if ( row >= 0 && row <= 7 && col >= 0 && col <= 7 ) {
         uint64_t temp = 1;
         *moves |= ( temp << ( 63 - ( row * 8 + col ) ) );
+    }
+}
+
+//lookup table dims are [64][2], first is location, second is white (0) or black (1)
+static void initializePawnLookupTable() {
+    uint index;
+    for ( uint row = 0; row < 8; ++row ) {
+        for ( uint col = 0; col < 8; ++col ) {
+            index = row * 8 + col;
+            if ( row > 0 ) {
+                addMove( row + 1, col - 1, &pawnLookupTable[index][1] );
+                addMove( row + 1, col, &pawnLookupTable[index][1] );
+                addMove( row + 1, col + 1, &pawnLookupTable[index][1] );
+                if ( row == 1 ) {
+                    addMove( row + 2, col, &pawnLookupTable[index][1] );
+                }
+            }
+
+            if ( row < 7 ) {
+                addMove( row - 1, col - 1, &pawnLookupTable[index][0] );
+                addMove( row - 1, col, &pawnLookupTable[index][0] );
+                addMove( row - 1, col + 1, &pawnLookupTable[index][0] );
+                if ( row == 6 ) {
+                    addMove( row - 2, col, &pawnLookupTable[index][0] );
+                }
+            }
+        }
     }
 }
 
@@ -137,6 +166,7 @@ void initializeLookupTables() {
     initializeHVLookupTable();
     initializeKnightLookupTable();
     initializeKingLookupTable();
+    initializePawnLookupTable();
 }
 
 
@@ -235,4 +265,43 @@ void getKnightMoves( uint row, uint col, uint64_t *moves ) {
     *moves = knightLookupTable[row * 8 + col];
 }
 
-void getPawnMoves(){};
+//sets moves to only the moves for moving directly up/down, since a pawn
+//can't capture with those. Then sets the captures for diagonals
+void getPawnMoves( Board *board, uint row, uint col, uint64_t *moves, uint64_t *captures ) {
+    bool isWhite = board->pieceMap[row][col].isWhite;
+    if ( isWhite ) {
+        if ( row == 0 ) {
+            return;
+        }
+        if ( board->pieceMap[row - 1][col].type == NONE ) {
+            addMove( row - 1, col, moves);
+            if ( row == 6 && board->pieceMap[row - 2][col].type == NONE ) {
+                addMove( row - 2, col, moves );
+            }
+        }
+        //diagonal captures
+        if ( col > 0 && board->pieceMap[row - 1][col - 1].type != NONE && !board->pieceMap[row - 1][col - 1].isWhite ) {
+            addMove( row - 1, col - 1, captures );
+        }
+        if ( col < 7 && board->pieceMap[row - 1][col + 1].type != NONE && !board->pieceMap[row - 1][col + 1].isWhite ) {
+            addMove( row - 1, col + 1, captures );
+        }
+    } else {
+        if ( row == 7 ) {
+            return;
+        }
+        if ( board->pieceMap[row + 1][col].type == NONE ) {
+            addMove( row + 1, col, moves);
+            if ( row == 1 && board->pieceMap[row + 2][col].type == NONE ) {
+                addMove( row + 2, col, moves );
+            }
+        }
+        //diagonal captures
+        if ( col > 0 && board->pieceMap[row + 1][col - 1].type != NONE && !board->pieceMap[row + 1][col - 1].isWhite ) {
+            addMove( row + 1, col - 1, captures );
+        }
+        if ( col < 7 && board->pieceMap[row + 1][col + 1].type != NONE && !board->pieceMap[row + 1][col + 1].isWhite ) {
+            addMove( row + 1, col + 1, captures );
+        }
+    }
+}

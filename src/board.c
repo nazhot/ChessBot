@@ -245,7 +245,9 @@ void board_printMovesCount( Board *board ) {
             switch( board->pieceMap[row][col].type ) {
                 case NONE:
                 case PAWN:
-                    continue;
+                    getPawnMoves( board, row, col, &moves, &captures );
+                    symbol = 'P';
+                    break;
                 case KNIGHT:
                     getKnightMoves( row, col, &moves );
                     symbol = 'N';
@@ -267,7 +269,9 @@ void board_printMovesCount( Board *board ) {
                     symbol = 'R';
                     break;
             }
-            board_getCapturesFromMoves( board, &captures, &moves, board->pieceMap[row][col].isWhite );
+            if ( board->pieceMap[row][col].type != PAWN ) {
+                board_getCapturesFromMoves( board, &captures, &moves, board->pieceMap[row][col].isWhite );
+            }
             numMoves = 0;
             numCaptures = 0;
             for ( uint i = 0; i < 64; ++i ) {

@@ -19,5 +19,5 @@ void getQueenMoves( Board *board, uint row, uint col, uint64_t *moves );
 void getRookMoves( Board *board, uint row, uint col, uint64_t *moves );
 void getBishopMoves( Board *board, uint row, uint col, uint64_t *moves );
 void getKnightMoves( uint row, uint col, uint64_t *moves );
-void getPawnMoves();
+void getPawnMoves( Board *board, uint row, uint col, uint64_t *moves, uint64_t *captures );
 #endif
