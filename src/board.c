@@ -56,6 +56,7 @@ Board* board_initialize() {
     board->pieceMap[7][5] = initializePiece( BISHOP, true );
     board->pieceMap[7][6] = initializePiece( KNIGHT, true );
     board->pieceMap[7][7] = initializePiece( ROOK, true );
+    board->numPastMoves = 0;
 
     return board;
 }
@@ -101,8 +102,31 @@ void board_getMovesForSide( Board *board, bool whiteToMove, Move *moveArray,
 
 }
 
-void board_makeMove( Board *board, Move *move ) {
+static void board_update64BitField( uint64_t *bitField, uint srcIndex, 
+                                    uint dstIndex ) {
+    *bitField ^= ( ( uint64_t ) 1 < ( 63 - srcIndex ) );
+    *bitField ^= ( ( uint64_t ) 1 < ( 63 - dstIndex ) );
+}
 
+static void board_update8BitField( char *bitField, uint index ) {
+    *bitField ^= ( 1 < ( 63 - index ) );
+}
+
+void board_makeMove( Board *board, Move *move ) {
+    board->pastMoves[board->numPastMoves++] = *move;
+    if ( move->dstRow != move->srcRow ) {
+        board_update8BitField( &board->bitMapRows[move->dstRow], move->dstCol );
+        board_update8BitField( &board->bitMapRows[move->srcRow], move->srcCol );
+    }
+    board_update64BitField( &board->bitMap, move->srcRow * 8 + move->srcCol, 
+                            move->dstRow * 8 + move->dstCol );
+    if ( move->whiteMove ) {
+        board_update64BitField( &board->whiteBitMap, move->srcRow * 8 + move->srcCol, 
+                                move->dstRow * 8 + move->dstCol );
+    } else {
+        board_update64BitField( &board->blackBitMap, move->srcRow * 8 + move->srcCol, 
+                                move->dstRow * 8 + move->dstCol );
+    }
 }
 
 static void addDirectionMove( uint32_t *move, uint numSquares, Direction direction, bool capture ) {
@@ -234,6 +258,10 @@ void board_printAlgebraicMoves( uint64_t moves ) {
     printf( ")" );
 }
 
+static void board_printAlgrebraicFromRowCol( uint row, uint col ) {
+    printf( "%c%u", col + 97, 8 - row );
+}
+
 void board_printMovesCount( Board *board ) {
     uint64_t moves, captures;
     uint numMoves, numCaptures;
@@ -278,14 +306,18 @@ void board_printMovesCount( Board *board ) {
                 numMoves += moves >> i & 1 ? 1 : 0;
                 numCaptures += captures >> i & 1 ? 1 : 0;
             }
-            printf( "Moves: %c%c (%u, %u): %u", board->pieceMap[row][col].isWhite ? 'w' : 'b',
-                                           symbol, row, col, numMoves );
-            board_printAlgebraicMoves( moves );
-            printf( "\n" );
-            printf( "Captures: %c%c (%u, %u): %u", board->pieceMap[row][col].isWhite ? 'w' : 'b',
-                                           symbol, row, col, numCaptures );
-            board_printAlgebraicMoves( captures );
-            printf( "\n" );
+            if ( numMoves ) {
+                printf( "Moves: %c%c (%u, %u): %u", board->pieceMap[row][col].isWhite ? 'w' : 'b',
+                                               symbol, row, col, numMoves );
+                board_printAlgebraicMoves( moves );
+                printf( "\n" );
+            }
+            if ( numCaptures ) {
+                printf( "\n" );
+                printf( "Captures: %c%c (%u, %u): %u", board->pieceMap[row][col].isWhite ? 'w' : 'b',
+                                               symbol, row, col, numCaptures );
+                board_printAlgebraicMoves( captures );
+            }
             //printMoves( moves, row * 8 + col, symbol );
         }
     }

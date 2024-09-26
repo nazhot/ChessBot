@@ -6,11 +6,33 @@
 #include <stdbool.h>
 #include "pieces.h"
 
+typedef enum Move_Type {
+    MOVE_NORMAL,
+    MOVE_CAPTURE,
+    MOVE_EN_PASSANT,
+    MOVE_CASTLE,
+    MOVE_CHECK,
+    MOVE_CHECKMATE
+} Move_Type;
+
+typedef enum Move_Direction {
+    DIRECTION_LEFT,
+    DIRECTION_RIGHT
+} Move_Direction;
+
 typedef struct Move {
+    bool whiteMove;
     char algebraicNotation[10];
-    Piece pieceCaptured;
-    char destinationSquare[2];
-    char sourceSquare[2];
+    Move_Type type;
+    union {
+        Piece pieceCaptured;
+        Move_Direction castleDirection;
+        Move_Direction enPassantDirection;
+    };
+    char dstRow;
+    char dstCol;
+    char srcRow;
+    char srcCol;
 } Move;
 
 
@@ -50,6 +72,8 @@ typedef struct Board {
     uint64_t blackBitMap;
     Piece pieceMap[8][8]; //actual pieces on the board
     bool    whiteToMove; 
+    Move pastMoves[256];
+    uint numPastMoves;
 } Board; 
 
 /**
