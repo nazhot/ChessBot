@@ -300,7 +300,8 @@ static void board_addPawnCaptures( Board *board, uint64_t *captures, uint64_t *m
             *moves ^= ( ( uint64_t ) 1 << ( 63 - ( index + diaLeftOffset ) ) );
         } else if ( row == enPassantRow && ( opponentPieceBitMap >> ( 63 - ( index - 1 ) ) & 1 ) ) {
             Move lastMove = board->pastMoves[board->numPastMoves - 1];
-            if ( lastMove.pieceType == PAWN && ( abs( ( int ) lastMove.dstRow - ( int ) lastMove.srcRow ) == 2 ) ) {
+            if ( lastMove.pieceType == PAWN && lastMove.srcCol == col - 1 && 
+                 ( abs( ( int ) lastMove.dstRow - ( int ) lastMove.srcRow ) == 2 ) ) {
                 *captures ^= ( ( uint64_t ) 1 << ( 63 - ( index + diaLeftOffset ) ) );
             }
         }
@@ -313,7 +314,8 @@ static void board_addPawnCaptures( Board *board, uint64_t *captures, uint64_t *m
             *moves ^= ( ( uint64_t ) 1 << ( 63 - ( index + diaRightOffset ) ) );
         } else if ( row == enPassantRow && ( opponentPieceBitMap >> ( 63 - ( index + 1 ) ) & 1 ) ) {
             Move lastMove = board->pastMoves[board->numPastMoves - 1];
-            if ( lastMove.pieceType == PAWN && ( abs( ( int ) lastMove.dstRow - ( int ) lastMove.srcRow ) == 2 ) ) {
+            if ( lastMove.pieceType == PAWN && lastMove.srcCol == col + 1 && 
+                 ( abs( ( int ) lastMove.dstRow - ( int ) lastMove.srcRow ) == 2 ) ) {
                 *captures ^= ( ( uint64_t ) 1 << ( 63 - ( index + diaRightOffset ) ) );
             }
         }
