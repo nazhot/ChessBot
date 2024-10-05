@@ -8,18 +8,25 @@ int main( int argc, char *argv[] ) {
 
     //int serverFD = server_startLocal();
     //server_listen();
+    initializeLookupTables();
 
     Board *board = board_initialize();
-    board_print( board );
-    //uint32_t moves = board_getPieceDirectionMoves( board, 6, 1 );
-    //board_printDirectionMoves( moves );
+    //board_print( board );
 
-    initializeLookupTables();
-    uint64_t moves = 0;
-    char diaBitMapUpRight = 0b01010000;
-    char diaBitMapDownRight = 0b11001000;
-    lookup_setDiagonalMoves( &moves, diaBitMapUpRight, diaBitMapDownRight, 4, 4 );
-    board_printMovesCount( board );
+    board_decideAndMakeMove( board );
+
+    free( board );
+/*
+    Board *testBoard = board_initialize();
+    for ( uint i = 0; i < 8; ++i ) {
+        for ( uint j = 0; j < 8; ++j ) {
+            board_clear( testBoard );
+            testBoard->pieceMap[i][j].type = QUEEN;
+            testBoard->pieceMap[i][j].isWhite = true;
+            board_decideAndMakeMove( testBoard );
+        }
+    }
+*/  
 
     return 0;
 }

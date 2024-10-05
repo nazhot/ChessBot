@@ -2,6 +2,7 @@
 #include "lookups.h"
 #include <stdio.h>
 #include <stdlib.h>
+#include <time.h>
 #include <inttypes.h>
 
 uint64_t kingLookupTable[64] = {0};
@@ -15,6 +16,7 @@ uint rcToUpRight[8][8] = { { 0, 1, 2, 3, 4, 5, 6, 7 },
                            { 5, 6, 7, 8, 9, 10, 11, 12 },
                            { 6, 7, 8, 9, 10, 11, 12, 13 },
                            { 7, 8, 9, 10, 11, 12, 13, 14 } };
+
  uint rcToDownRight[8][8] = { { 7, 8, 9, 10, 11, 12, 13, 14 },
                               { 6, 7, 8, 9, 10, 11, 12, 13 },
                               { 5, 6, 7, 8, 9, 10, 11, 12 },
@@ -24,7 +26,27 @@ uint rcToUpRight[8][8] = { { 0, 1, 2, 3, 4, 5, 6, 7 },
                               { 1, 2, 3, 4, 5, 6, 7, 8 },
                               { 0, 1, 2, 3, 4, 5, 6, 7 } };
 
+uint rcToUpRightIndex[8][8] = { { 0, 1, 2, 3, 4, 5, 6, 7 },
+                                { 0, 1, 2, 3, 4, 5, 6, 6 },
+                                { 0, 1, 2, 3, 4, 5, 5, 5 },
+                                { 0, 1, 2, 3, 4, 4, 4, 4 },
+                                { 0, 1, 2, 3, 3, 3, 3, 3 },
+                                { 0, 1, 2, 2, 2, 2, 2, 2 },
+                                { 0, 1, 1, 1, 1, 1, 1, 1 },
+                                { 0, 0, 0, 0, 0, 0, 0, 0 } };
+
+uint rcToDownRightIndex[8][8] = { { 0, 0, 0, 0, 0, 0, 0, 0 },
+                                  { 0, 1, 1, 1, 1, 1, 1, 1 },
+                                  { 0, 1, 2, 2, 2, 2, 2, 2 },
+                                  { 0, 1, 2, 3, 3, 3, 3, 3 },
+                                  { 0, 1, 2, 3, 4, 4, 4, 4 },
+                                  { 0, 1, 2, 3, 4, 5, 5, 5 },
+                                  { 0, 1, 2, 3, 4, 5, 6, 6 },
+                                  { 0, 1, 2, 3, 4, 5, 6, 7 } };
+
 uint64_t pawnLookupTable[64][2] = {0};
+
+IndexTranslation indexTranslations[64] = {0};
 
 void printMoves( uint64_t moves, uint indexToCheck, char symbol ) {
     printf( "%u\n", indexToCheck );
@@ -47,6 +69,28 @@ static void addMove( int row, int col, uint64_t *moves ) {
         uint64_t temp = 1;
         *moves |= ( temp << ( 63 - ( row * 8 + col ) ) );
     }
+}
+
+static void initializeIndexTranslations() {
+    for ( uint i = 0; i < 64; ++i  ) {
+        uint row = i / 8;
+        uint col = i % 8;
+        uint rowDiff = 7 - row;
+        uint colDiff = col;
+        uint diaUpRightIndex = rowDiff < colDiff ? rowDiff : colDiff;
+        uint diaDownRightIndex = row < col ? row : col;
+
+        indexTranslations[i].row = row;
+        indexTranslations[i].col = col;
+        indexTranslations[i].diaUpRight = rcToUpRight[row][col];
+        indexTranslations[i].diaUpRightIndex = diaUpRightIndex;
+        indexTranslations[i].diaDownRight = rcToDownRight[row][col];
+        indexTranslations[i].diaDownRightIndex = diaDownRightIndex;
+    }
+}
+
+IndexTranslation* lookup_translateIndex( uint index ) {
+    return &indexTranslations[index];
 }
 
 //lookup table dims are [64][2], first is location, second is white (0) or black (1)
@@ -163,26 +207,29 @@ static void initializeHVLookupTable() {
 }
 
 void initializeLookupTables() {
+    srand( time( NULL ) );
     initializeHVLookupTable();
     initializeKnightLookupTable();
     initializeKingLookupTable();
     initializePawnLookupTable();
+    initializeIndexTranslations();
 }
 
 
 
-void lookup_setHorizontalMoves( uint64_t *moves, char rowBitMap, uint rowNumber,
+void lookup_setHorizontalMoves( uint64_t *moves, unsigned char rowBitMap, uint rowNumber,
                                 uint colNumber ) {
-    char rowMoveBitMap = hvdLookupTable[rowBitMap][colNumber];
+    //ran into issues when this was a signed char
+    unsigned char rowMoveBitMap = hvdLookupTable[( int ) rowBitMap][colNumber];
     if ( rowMoveBitMap == 0 ) { //no moves, which should mean that there is no piece at the specified col number?
         return;
     }
     *moves |= ( ( uint64_t ) rowMoveBitMap ) << ( ( 7 - rowNumber ) * 8 );
 }
 
-void lookup_setVerticalMoves( uint64_t *moves, char colBitMap, uint rowNumber,
+void lookup_setVerticalMoves( uint64_t *moves, unsigned char colBitMap, uint rowNumber,
                               uint colNumber ) {
-    char colMoveBitMap = hvdLookupTable[colBitMap][rowNumber];
+    char colMoveBitMap = hvdLookupTable[( int ) colBitMap][rowNumber];
     if ( colMoveBitMap == 0 ) { //no moves, which should mean that there is no piece at the specified col number?
         return;
     }
@@ -238,25 +285,23 @@ void getKingMoves( uint row, uint col, uint64_t *moves ) {
 
 void getQueenMoves( Board *board, uint row, uint col, uint64_t *moves ) {
     if ( row > 7 || col > 7 ) return;
-    lookup_setVerticalMoves( moves, board->bitMapCols[col], row, col );
-    lookup_setHorizontalMoves( moves, board->bitMapRows[row], row, col );
-    lookup_setDiagonalMoves( moves, board->bitMapDiasUpRight[rcToUpRight[row][col]], 
-                             board->bitMapDiasDownRight[rcToDownRight[row][col]],
+    lookup_setVerticalMoves( moves, board->bitFields.allCols[col], row, col );
+    lookup_setHorizontalMoves( moves, board->bitFields.allRows[row], row, col );
+    lookup_setDiagonalMoves( moves, board->bitFields.allDiasUpRight[rcToUpRight[row][col]], 
+                             board->bitFields.allDiasDownRight[rcToDownRight[row][col]],
                              row, col );
 }
 
 void getRookMoves( Board *board, uint row, uint col, uint64_t *moves ) {
     if ( row > 7 || col > 7 ) return;
-    lookup_setVerticalMoves( moves, board->bitMapCols[col], row, col );
-    lookup_setHorizontalMoves( moves, board->bitMapRows[row], row, col );
+    lookup_setVerticalMoves( moves, board->bitFields.allCols[col], row, col );
+    lookup_setHorizontalMoves( moves, board->bitFields.allRows[row], row, col );
 }
 
 void getBishopMoves( Board *board, uint row, uint col, uint64_t *moves ) {
     if ( row > 7 || col > 7 ) return;
-    uint diaUpRightIndex = ( row + col ); //
-    uint diaDownRightIndex;
-    lookup_setDiagonalMoves( moves, board->bitMapDiasUpRight[rcToUpRight[row][col]], 
-                             board->bitMapDiasDownRight[rcToDownRight[row][col]],
+    lookup_setDiagonalMoves( moves, board->bitFields.allDiasUpRight[rcToUpRight[row][col]], 
+                             board->bitFields.allDiasDownRight[rcToDownRight[row][col]],
                              row, col );
 }
 

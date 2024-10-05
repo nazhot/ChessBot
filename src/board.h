@@ -6,72 +6,77 @@
 #include <stdbool.h>
 #include "pieces.h"
 
-typedef enum Move_Type {
+typedef enum MoveType {
     MOVE_NORMAL,
-    MOVE_CAPTURE,
-    MOVE_EN_PASSANT,
     MOVE_CASTLE,
     MOVE_CHECK,
-    MOVE_CHECKMATE
-} Move_Type;
+    MOVE_CHECKMATE,
+    MOVE_CAPTURE
+} MoveType;
 
-typedef enum Move_Direction {
+typedef enum CaptureType {
+    CAPTURE_NORMAL,
+    CAPTURE_EN_PASSANT,
+    CAPTURE_CHECK,
+    CAPTURE_CHECKMATE
+} CaptureType;
+
+typedef enum MoveDirection {
     DIRECTION_LEFT,
     DIRECTION_RIGHT
-} Move_Direction;
+} MoveDirection;
 
+//WIP
+//Used to fully describe a move, including information that should help in
+//grading moves and deciding which to choose. Need to use it more in contexts
+//to see what, if anything, should change/be added.
 typedef struct Move {
     bool whiteMove;
     char algebraicNotation[10];
-    Move_Type type;
+    PieceType pieceType;
+    MoveType moveType;
+    CaptureType captureType;
     union {
         Piece pieceCaptured;
-        Move_Direction castleDirection;
-        Move_Direction enPassantDirection;
+        MoveDirection castleDirection;
+        MoveDirection enPassantDirection;
     };
-    char dstRow;
-    char dstCol;
-    char srcRow;
-    char srcCol;
+    uint dstRow;
+    uint dstCol;
+    uint srcRow;
+    uint srcCol;
 } Move;
 
-
-//consider moving each bitmap to be (3) char[8]'s
-//there would be one for rows, one for columns, one for diagonals
-//this would allow move calculation to be a lookup value, rather than a looping
-//calculation every time
-//there would be a size 256 array for each possible combination of pieces in row/col/diagonal
-//that would point to another array for each possible position the piece is in,
-//that would then point to the valid moves for that piece
-//
-//to figure out capturing, I think you would do the initial lookup with the bit maps for
-//all pieces, and then just have to do two checks, one for each side of the row/col/diagonal
-//to see if the piece it ran into was an opponent? Idk, that may be the most complicated part
-//
-//then lookup tables would have a lot of overlap: rows/cols can be used for rook/queen,
-//diagonals for bishop/queen, and there can be specific ones for knights, pawns, and the king
-//which should also help a lot with the calculation. For the knight I imagine you
-//would just make a size 81 array, for each possible position on the board, and it just gives back
-//the places it could jump to. XORing with the piece's bit map would remove the places it cannot jump,
-//and ANDing it with the opponent's bit map would show the capture points
+//Has all of the information about a board. The bitFields member contains all of
+//the different bit representations of the current board. "Board" variables are
+//bit representations of the full board. "Board" >> ( 63 - index ) & 1 = a piece is there.
+//All char variables use char >> ( 7 - index ) to get the bit. DiasUpRight starts
+//in the top left of the board, travels to the right. DiasDownRight starts in the bottom
+//left and moves right.
 typedef struct Board {
-    char bitMapRows[8];
-    char bitMapCols[8];
-    char bitMapDiasUpRight[15];
-    char bitMapDiasDownRight[15];
-    char whiteBitMapRows[8];
-    char whiteBitMapCols[8];
-    char whiteBitMapDiasUpRight[15];
-    char whiteBitMapDiasDownRight[15];
-    char blackBitMapRows[8];
-    char blackBitMapCols[8];
-    char blackBitMapDiasUpRight[15];
-    char blackBitMapDiasDownRight[15];
-    uint64_t bitMap; //what parts of the board are occupied, each square is 1 bit
-    uint64_t whiteBitMap;
-    uint64_t blackBitMap;
+    struct {
+        uint64_t allBoard;
+        uint64_t whtBoard;
+        uint64_t blkBoard;
+
+        unsigned char allRows[8];
+        unsigned char allCols[8];
+        unsigned char allDiasUpRight[15];
+        unsigned char allDiasDownRight[15];
+
+        unsigned char whtRows[8];
+        unsigned char whtCols[8];
+        unsigned char whtDiasUpRight[15];
+        unsigned char whtDiasDownRight[15];
+
+        unsigned char blkRows[8];
+        unsigned char blkCols[8];
+        unsigned char blkDiasUpRight[15];
+        unsigned char blkDiasDownRight[15];
+        
+    } bitFields;
     Piece pieceMap[8][8]; //actual pieces on the board
-    bool    whiteToMove; 
+    bool whiteToMove; 
     Move pastMoves[256];
     uint numPastMoves;
 } Board; 
@@ -82,17 +87,13 @@ typedef struct Board {
  * @return newly created Board
  */
 Board* board_initialize();
-void board_getMovesForPiece( Board *board, char sourceSquare[2], Move *moveArray,
-                             uint moveArraySize );
+void board_clear( Board *board );
 void board_getMovesForSide( Board *board, bool whiteToMove, Move *moveArray, 
                             uint moveArraySize );
+Move* board_getMovesForCurrentSide( Board *board, uint *numMoves );
 void board_makeMove( Board *board, Move *move );
-void board_printDirectionMoves( uint32_t moves );
-//return value has bit set to 1 if 
-void board_getPieceDirectionMoves( Board *board, uint row, uint col,
-                                   uint64_t *moveBitMap, uint64_t *captureBitMap );
 void board_print( Board *board );
 void board_decideAndMakeMove( Board *board );
-void board_printMovesCount( Board *board );
+void board_printBitField( char bitField, char *text );
 
 #endif

@@ -5,13 +5,23 @@
 #include <stdlib.h>
 #include "board.h"
 
+typedef struct IndexTranslation {
+    uint row;
+    uint col;
+    uint diaUpRight;
+    uint diaUpRightIndex;
+    uint diaDownRight;
+    uint diaDownRightIndex;
+} IndexTranslation;
+
 void initializeLookupTables();
-void lookup_setHorizontalMoves( uint64_t *moves, char rowBitMap, uint rowNumber,
+void lookup_setHorizontalMoves( uint64_t *moves, unsigned char rowBitMap, uint rowNumber,
                                 uint colNumber );
-void lookup_setVerticalMoves( uint64_t *moves, char colBitMap, uint rowNumber,
+void lookup_setVerticalMoves( uint64_t *moves, unsigned char colBitMap, uint rowNumber,
                               uint colNumber );
 void lookup_setDiagonalMoves( uint64_t *moves, unsigned char diaBitMapUpRight, 
                               unsigned char diaBitMapDownRight, uint rowNumber, uint colNumber );
+IndexTranslation* lookup_translateIndex( uint index );
 void printMoves( uint64_t moves, uint indexToCheck, char symbol );
 
 void getKingMoves( uint row, uint col, uint64_t *moves );
