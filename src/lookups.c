@@ -314,39 +314,18 @@ void getKnightMoves( uint row, uint col, uint64_t *moves ) {
 //can't capture with those. Then sets the captures for diagonals
 void getPawnMoves( Board *board, uint row, uint col, uint64_t *moves, uint64_t *captures ) {
     bool isWhite = board->pieceMap[row][col].isWhite;
-    if ( isWhite ) {
-        if ( row == 0 ) {
-            return;
-        }
-        if ( board->pieceMap[row - 1][col].type == NONE ) {
-            addMove( row - 1, col, moves);
-            if ( row == 6 && board->pieceMap[row - 2][col].type == NONE ) {
-                addMove( row - 2, col, moves );
-            }
-        }
-        //diagonal captures
-        if ( col > 0 && board->pieceMap[row - 1][col - 1].type != NONE && !board->pieceMap[row - 1][col - 1].isWhite ) {
-            addMove( row - 1, col - 1, captures );
-        }
-        if ( col < 7 && board->pieceMap[row - 1][col + 1].type != NONE && !board->pieceMap[row - 1][col + 1].isWhite ) {
-            addMove( row - 1, col + 1, captures );
-        }
-    } else {
-        if ( row == 7 ) {
-            return;
-        }
-        if ( board->pieceMap[row + 1][col].type == NONE ) {
-            addMove( row + 1, col, moves);
-            if ( row == 1 && board->pieceMap[row + 2][col].type == NONE ) {
-                addMove( row + 2, col, moves );
-            }
-        }
-        //diagonal captures
-        if ( col > 0 && board->pieceMap[row + 1][col - 1].type != NONE && !board->pieceMap[row + 1][col - 1].isWhite ) {
-            addMove( row + 1, col - 1, captures );
-        }
-        if ( col < 7 && board->pieceMap[row + 1][col + 1].type != NONE && !board->pieceMap[row + 1][col + 1].isWhite ) {
-            addMove( row + 1, col + 1, captures );
-        }
+    uint tooFarRow = isWhite ? 0 : 7;
+    if ( row == tooFarRow ) {
+        return;
     }
+    int offset = isWhite ? -1 : 1;
+    if ( board->pieceMap[row + offset][col].type != NONE ) {
+        return;
+    }
+    addMove( row + offset, col, moves);
+    uint doubleMoveRow = isWhite ? 6 : 1;
+    if ( row != doubleMoveRow || board->pieceMap[row + ( offset + offset )][col].type != NONE ) {
+        return;
+    }
+    addMove( row + ( offset + offset ), col, moves );
 }

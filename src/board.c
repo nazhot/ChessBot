@@ -288,15 +288,21 @@ static void board_printMove( Move *move ) {
 //currently does not check for if the pawn is at the end of the board, the pawn should
 //be promoted, hence there should never be a pawn checking for moves at the end of the board
 static void board_addPawnCaptures( Board *board, uint64_t *captures, uint64_t *moves, uint row, uint col ) {
+    //diagonal captures
     uint index = row * 8 + col;
     bool isWhite = board->pieceMap[row][col].isWhite;
     uint64_t opponentPieceBitMap = isWhite ? board->bitFields.blkBoard : board->bitFields.whtBoard;
-    uint64_t friendlyPieceBitMap = isWhite ? board->bitFields.whtBoard : board->bitFields.blkBoard;
+    const uint enPassantRow = isWhite ? 5 : 4;
     if ( col > 0 ) {
         int diaLeftOffset = isWhite ? -9 : 7;
         if ( opponentPieceBitMap >> ( 63 - ( index + diaLeftOffset ) ) & 1 ) {
             *captures ^= ( ( uint64_t ) 1 << ( 63 - ( index + diaLeftOffset ) ) );
             *moves ^= ( ( uint64_t ) 1 << ( 63 - ( index + diaLeftOffset ) ) );
+        } else if ( row == enPassantRow && ( opponentPieceBitMap >> ( 63 - ( index - 1 ) ) & 1 ) ) {
+            Move lastMove = board->pastMoves[board->numPastMoves - 1];
+            if ( lastMove.pieceType == PAWN && ( abs( ( int ) lastMove.dstRow - ( int ) lastMove.srcRow ) == 2 ) ) {
+                *captures ^= ( ( uint64_t ) 1 << ( 63 - ( index + diaLeftOffset ) ) );
+            }
         }
     }
 
@@ -305,9 +311,13 @@ static void board_addPawnCaptures( Board *board, uint64_t *captures, uint64_t *m
         if ( opponentPieceBitMap >> ( 63 - ( index + diaRightOffset ) ) & 1 ) {
             *captures ^= ( ( uint64_t ) 1 << ( 63 - ( index + diaRightOffset ) ) );
             *moves ^= ( ( uint64_t ) 1 << ( 63 - ( index + diaRightOffset ) ) );
+        } else if ( row == enPassantRow && ( opponentPieceBitMap >> ( 63 - ( index + 1 ) ) & 1 ) ) {
+            Move lastMove = board->pastMoves[board->numPastMoves - 1];
+            if ( lastMove.pieceType == PAWN && ( abs( ( int ) lastMove.dstRow - ( int ) lastMove.srcRow ) == 2 ) ) {
+                *captures ^= ( ( uint64_t ) 1 << ( 63 - ( index + diaRightOffset ) ) );
+            }
         }
     }
-
 }
 
 Move* board_getMovesForCurrentSide( Board *board, uint *numMoves ) {
@@ -356,9 +366,16 @@ Move* board_getMovesForCurrentSide( Board *board, uint *numMoves ) {
             //printf( "\n" );
             //board_printBitField( board->bitFields.allRows[row], "Row field: " );
             //printf( "\n" );
+            bool enPassant;
             for ( uint i = 0; i < 64; ++i ) {
+                enPassant = false;
                 if ( !( moves >> ( 63 - i ) & 1 ) ) {
-                    continue;
+                    //en passant
+                    if ( captures >> ( 63 - i ) & 1 ) {
+                        enPassant = true;
+                    } else {
+                        continue;
+                    }
                 }
                 if ( *numMoves == moveArraySize ) {
                     moveArraySize *= 2;
@@ -375,6 +392,10 @@ Move* board_getMovesForCurrentSide( Board *board, uint *numMoves ) {
                 if ( captures >> ( 63 - i ) & 1  ) {
                     moveArray[*numMoves].moveType = MOVE_CAPTURE;
                     moveArray[*numMoves].captureType = CAPTURE_NORMAL; //TODO: update to actually check for capture type
+                    if ( enPassant ) {
+                        moveArray[*numMoves].captureType = CAPTURE_EN_PASSANT;
+                        printf( "En Passant!!! %u, %u\n", row, col );
+                    }
                 }
                 //board_printMove( &moveArray[*numMoves] );
 
