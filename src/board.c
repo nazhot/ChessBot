@@ -339,7 +339,7 @@ Move* board_getMovesForCurrentSide( Board *board, uint *numMoves ) {
             switch( board->pieceMap[row][col].type ) {
                 case NONE:
                 case PAWN:
-                    getPawnMoves( board, row, col, &moves, &captures );
+                    getPawnMoves( board, row, col, &moves );
                     break;
                 case KNIGHT:
                     getKnightMoves( row, col, &moves );

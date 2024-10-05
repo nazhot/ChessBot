@@ -312,7 +312,7 @@ void getKnightMoves( uint row, uint col, uint64_t *moves ) {
 
 //sets moves to only the moves for moving directly up/down, since a pawn
 //can't capture with those. Then sets the captures for diagonals
-void getPawnMoves( Board *board, uint row, uint col, uint64_t *moves, uint64_t *captures ) {
+void getPawnMoves( Board *board, uint row, uint col, uint64_t *moves ) {
     bool isWhite = board->pieceMap[row][col].isWhite;
     uint tooFarRow = isWhite ? 0 : 7;
     if ( row == tooFarRow ) {
