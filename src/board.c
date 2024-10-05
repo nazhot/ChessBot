@@ -285,6 +285,31 @@ static void board_printMove( Move *move ) {
     printf( "\n" );
 }
 
+//currently does not check for if the pawn is at the end of the board, the pawn should
+//be promoted, hence there should never be a pawn checking for moves at the end of the board
+static void board_addPawnCaptures( Board *board, uint64_t *captures, uint64_t *moves, uint row, uint col ) {
+    uint index = row * 8 + col;
+    bool isWhite = board->pieceMap[row][col].isWhite;
+    uint64_t opponentPieceBitMap = isWhite ? board->bitFields.blkBoard : board->bitFields.whtBoard;
+    uint64_t friendlyPieceBitMap = isWhite ? board->bitFields.whtBoard : board->bitFields.blkBoard;
+    if ( col > 0 ) {
+        int diaLeftOffset = isWhite ? -9 : 7;
+        if ( opponentPieceBitMap >> ( 63 - ( index + diaLeftOffset ) ) & 1 ) {
+            *captures ^= ( ( uint64_t ) 1 << ( 63 - ( index + diaLeftOffset ) ) );
+            *moves ^= ( ( uint64_t ) 1 << ( 63 - ( index + diaLeftOffset ) ) );
+        }
+    }
+
+    if ( col < 7 ) {
+        int diaRightOffset = isWhite ? -7 : 9;
+        if ( opponentPieceBitMap >> ( 63 - ( index + diaRightOffset ) ) & 1 ) {
+            *captures ^= ( ( uint64_t ) 1 << ( 63 - ( index + diaRightOffset ) ) );
+            *moves ^= ( ( uint64_t ) 1 << ( 63 - ( index + diaRightOffset ) ) );
+        }
+    }
+
+}
+
 Move* board_getMovesForCurrentSide( Board *board, uint *numMoves ) {
     uint moveArraySize = 32;
     Move *moveArray = malloc( moveArraySize * sizeof( Move ) ); 
@@ -298,7 +323,7 @@ Move* board_getMovesForCurrentSide( Board *board, uint *numMoves ) {
                 continue;
             }
             if ( ( board->whiteToMove && !board->pieceMap[row][col].isWhite ) ||
-                 ( !board->whiteToMove && board->pieceMap[row][col].isWhite ) ) {
+                ( !board->whiteToMove && board->pieceMap[row][col].isWhite ) ) {
                 continue;
             }
             switch( board->pieceMap[row][col].type ) {
@@ -324,6 +349,8 @@ Move* board_getMovesForCurrentSide( Board *board, uint *numMoves ) {
             }
             if ( board->pieceMap[row][col].type != PAWN ) {
                 board_getCapturesFromMoves( board, &captures, &moves, board->pieceMap[row][col].isWhite );
+            } else {
+                board_addPawnCaptures( board, &captures, &moves, row, col );
             }
             //board_printBitField( board->bitFields.allRows[row], "Row field: " );
             //printf( "\n" );
@@ -388,7 +415,7 @@ void board_decideAndMakeMove( Board *board ) {
 
     uint numMoves = 0;
     Move *moves;
-/*
+    /*
     board_updateBitFieldsFromPieces( board );
     moves = board_getMovesForCurrentSide( board, &numMoves );
     free( moves );
