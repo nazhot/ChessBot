@@ -95,5 +95,6 @@ void board_makeMove( Board *board, Move *move );
 void board_print( Board *board );
 void board_decideAndMakeMove( Board *board );
 void board_printBitField( char bitField, char *text );
+void board_playGame( Board *board );
 
 #endif

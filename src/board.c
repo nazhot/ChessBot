@@ -292,7 +292,7 @@ static void board_addPawnCaptures( Board *board, uint64_t *captures, uint64_t *m
     uint index = row * 8 + col;
     bool isWhite = board->pieceMap[row][col].isWhite;
     uint64_t opponentPieceBitMap = isWhite ? board->bitFields.blkBoard : board->bitFields.whtBoard;
-    const uint enPassantRow = isWhite ? 5 : 4;
+    const uint enPassantRow = isWhite ? 3 : 4;
     if ( col > 0 ) {
         int diaLeftOffset = isWhite ? -9 : 7;
         if ( opponentPieceBitMap >> ( 63 - ( index + diaLeftOffset ) ) & 1 ) {
@@ -450,6 +450,31 @@ void board_decideAndMakeMove( Board *board ) {
         board_makeMove( board, &moves[random] );
         board_printMove( &moves[random] );
         board_print( board );
+        free( moves );
+    }
+}
+
+void board_playGame( Board *board ) {
+    uint numMoves;
+    Move *moves;
+    while ( true ) {
+        numMoves = 0;
+        board_print( board );
+        printf( "%s turn:\n", board->whiteToMove ? "White's" : "Black's" );
+        moves = board_getMovesForCurrentSide( board, &numMoves );
+        for ( uint i = 0; i < numMoves; ++i ) {
+            printf( "%u: ", i );
+            board_printMove( &moves[i] );
+        }
+        uint index = numMoves;
+        char buffer[5];
+        while ( index >= numMoves ) {
+            printf( "\nChoose an index from 0-%u: ", numMoves - 1 );
+            fgets( buffer, 5, stdin );
+            index = atoi( buffer );
+        }
+        board_printMove( &moves[index] );
+        board_makeMove( board, &moves[index] );
         free( moves );
     }
 }

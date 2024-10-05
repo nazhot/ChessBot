@@ -13,7 +13,8 @@ int main( int argc, char *argv[] ) {
     Board *board = board_initialize();
     //board_print( board );
 
-    board_decideAndMakeMove( board );
+    //board_decideAndMakeMove( board );
+    board_playGame( board );
 
     free( board );
 /*
