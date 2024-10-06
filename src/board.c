@@ -65,6 +65,8 @@ Board* board_initialize() {
     board->pieceMap[7][6] = initializePiece( KNIGHT, true );
     board->pieceMap[7][7] = initializePiece( ROOK, true );
     board->numPastMoves = 0;
+    board->whiteInCheck = false;
+    board->blackInCheck = false;
 
     for ( uint row = 2; row < 6; ++row ) {
         for ( uint col = 0; col < 8; ++col ) {
@@ -89,16 +91,6 @@ void board_clear( Board *board ) {
 void board_getMovesForSide( Board *board, bool whiteToMove, Move *moveArray, 
                             uint moveArraySize ) {
 
-}
-
-static void board_update64BitField( uint64_t *bitField, uint srcIndex, 
-                                    uint dstIndex ) {
-    *bitField ^= ( ( uint64_t ) 1 << ( 63 - srcIndex ) );
-    *bitField ^= ( ( uint64_t ) 1 << ( 63 - dstIndex ) );
-}
-
-static void board_update8BitField( unsigned char *bitField, uint index ) {
-    *bitField ^= ( 1 << ( 7 - index ) );
 }
 
 static void board_set8BitFieldIndex( unsigned char *bitField, uint index ) {
@@ -246,6 +238,12 @@ void board_makeMove( Board *board, Move *move ) {
             break;
         case MOVE_CHECKMATE:
             break;
+        case MOVE_PROMOTION:
+            memcpy( &board->pieceMap[move->dstRow][move->dstCol],
+                    &board->pieceMap[move->srcRow][move->srcCol], sizeof( Piece ) );
+            board->pieceMap[move->srcRow][move->srcCol].type = NONE;
+            board->pieceMap[move->dstRow][move->dstCol].type = move->promotionType;
+            break;
     }
     board_updateBitFieldsFromPieces( board );
     memcpy( &board->pastMoves[board->numPastMoves++], move, sizeof( Move ) );
@@ -301,6 +299,9 @@ static void board_printAlgrebraicFromRowCol( uint row, uint col ) {
 }
 
 static void board_printMove( Move *move ) {
+    static char pieceSymbols[] = { [NONE] = ' ', [PAWN] = 'P', [KNIGHT] = 'N', 
+                                   [BISHOP] = 'B', [ROOK] = 'R', [QUEEN] = 'Q',
+                                   [KING] = 'K' };
     if ( move->moveType == MOVE_CASTLE ) {
         if ( move->castleDirection == DIRECTION_LEFT ) {
             printf( "cLeft\n" );
@@ -314,6 +315,8 @@ static void board_printMove( Move *move ) {
     board_printAlgrebraicFromRowCol( move->dstRow, move->dstCol ); 
     if ( move->moveType == MOVE_CAPTURE ) {
         printf( " (Capture)" );
+    } else if ( move->moveType == MOVE_PROMOTION ) {
+        printf( " (%c)", pieceSymbols[move->promotionType] );
     }
     printf( "\n" );
 }
@@ -435,6 +438,27 @@ Move* board_getMovesForCurrentSide( Board *board, uint *numMoves ) {
                     moveArraySize *= 2;
                     moveArray = realloc( moveArray, moveArraySize * sizeof( Move ) );
                 }
+
+                //check for promotion
+                if ( i / 8 == ( board->whiteToMove ? 0 : 7 ) &&
+                     ( board->pieceMap[row][col].type == PAWN ) ) {
+                    for ( uint promotionPiece = KNIGHT; promotionPiece <= QUEEN; ++promotionPiece ) {
+                        if ( *numMoves == moveArraySize ) {
+                            moveArraySize *= 2;
+                            moveArray = realloc( moveArray, moveArraySize * sizeof( Move ) );
+                        }
+                        moveArray[*numMoves].moveType = MOVE_PROMOTION;
+                        moveArray[*numMoves].promotionType = promotionPiece;
+                        moveArray[*numMoves].whiteMove = board->pieceMap[row][col].isWhite;
+                        moveArray[*numMoves].pieceType = PAWN;
+                        moveArray[*numMoves].srcRow = row;
+                        moveArray[*numMoves].srcCol = col;
+                        moveArray[*numMoves].dstRow = i / 8;
+                        moveArray[*numMoves].dstCol = i % 8;
+                        ++*numMoves;
+                    }
+                    continue;
+                }
                 moveArray[*numMoves].moveType = MOVE_NORMAL;
                 moveArray[*numMoves].whiteMove = board->pieceMap[row][col].isWhite;
                 moveArray[*numMoves].pieceType = board->pieceMap[row][col].type;
@@ -452,6 +476,7 @@ Move* board_getMovesForCurrentSide( Board *board, uint *numMoves ) {
                         moveArray[*numMoves].pieceCaptured = PAWN;
                     }
                 }
+
                 //board_printMove( &moveArray[*numMoves] );
 
                 ++*numMoves;

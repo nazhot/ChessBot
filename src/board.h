@@ -11,7 +11,8 @@ typedef enum MoveType {
     MOVE_CASTLE,
     MOVE_CHECK,
     MOVE_CHECKMATE,
-    MOVE_CAPTURE
+    MOVE_CAPTURE,
+    MOVE_PROMOTION
 } MoveType;
 
 typedef enum CaptureType {
@@ -39,7 +40,7 @@ typedef struct Move {
     union {
         PieceType pieceCaptured;
         MoveDirection castleDirection;
-        MoveDirection enPassantDirection;
+        PieceType promotionType; 
     };
     uint dstRow;
     uint dstCol;
@@ -77,6 +78,8 @@ typedef struct Board {
     } bitFields;
     Piece pieceMap[8][8]; //actual pieces on the board
     bool whiteToMove; 
+    bool whiteInCheck;
+    bool blackInCheck;
     Move pastMoves[256];
     uint numPastMoves;
 } Board; 
