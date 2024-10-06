@@ -37,7 +37,7 @@ typedef struct Move {
     MoveType moveType;
     CaptureType captureType;
     union {
-        Piece pieceCaptured;
+        PieceType pieceCaptured;
         MoveDirection castleDirection;
         MoveDirection enPassantDirection;
     };

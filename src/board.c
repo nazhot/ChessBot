@@ -398,9 +398,10 @@ Move* board_getMovesForCurrentSide( Board *board, uint *numMoves ) {
                 if ( captures >> ( 63 - i ) & 1  ) {
                     moveArray[*numMoves].moveType = MOVE_CAPTURE;
                     moveArray[*numMoves].captureType = CAPTURE_NORMAL; //TODO: update to actually check for capture type
+                    moveArray[*numMoves].pieceCaptured = board->pieceMap[i / 8][i % 8].type;
                     if ( enPassant ) {
                         moveArray[*numMoves].captureType = CAPTURE_EN_PASSANT;
-                        printf( "En Passant!!! %u, %u\n", row, col );
+                        moveArray[*numMoves].pieceCaptured = PAWN;
                     }
                 }
                 //board_printMove( &moveArray[*numMoves] );
