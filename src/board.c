@@ -194,6 +194,7 @@ void board_makeMove( Board *board, Move *move ) {
 */
 
 void board_makeMove( Board *board, Move *move ) {
+    ++board->pieceMap[move->srcRow][move->srcCol].numMoves;
     switch ( move->moveType ) {
         case MOVE_NORMAL:
             memcpy( &board->pieceMap[move->dstRow][move->dstCol],
@@ -201,6 +202,26 @@ void board_makeMove( Board *board, Move *move ) {
             board->pieceMap[move->srcRow][move->srcCol].type = NONE;
             break;
         case MOVE_CASTLE:
+            if ( move->castleDirection == DIRECTION_LEFT ) {
+                //king
+                memcpy( &board->pieceMap[move->srcRow][2], &board->pieceMap[move->srcRow][4],
+                       sizeof( Piece ) );
+                //rook
+                memcpy( &board->pieceMap[move->srcRow][3], &board->pieceMap[move->srcRow][0],
+                       sizeof( Piece ) );
+                board->pieceMap[move->srcRow][0].type = NONE; //remove rook
+                ++board->pieceMap[move->srcRow][3].numMoves; //increment rook moves
+            } else {
+                //king
+                memcpy( &board->pieceMap[move->srcRow][6], &board->pieceMap[move->srcRow][4],
+                       sizeof( Piece ) );
+                //rook
+                memcpy( &board->pieceMap[move->srcRow][5], &board->pieceMap[move->srcRow][7],
+                       sizeof( Piece ) );
+                board->pieceMap[move->srcRow][7].type = NONE; //remove rook
+                ++board->pieceMap[move->srcRow][5].numMoves; //increment rook moves
+            }
+            board->pieceMap[move->srcRow][4].type = NONE; //remove king
             break;
         case MOVE_CHECK:
             break;
@@ -280,6 +301,14 @@ static void board_printAlgrebraicFromRowCol( uint row, uint col ) {
 }
 
 static void board_printMove( Move *move ) {
+    if ( move->moveType == MOVE_CASTLE ) {
+        if ( move->castleDirection == DIRECTION_LEFT ) {
+            printf( "cLeft\n" );
+        } else {
+            printf( "cRight\n" );
+        }
+        return;
+    }
     board_printAlgrebraicFromRowCol( move->srcRow, move->srcCol ); 
     printf( "-" );
     board_printAlgrebraicFromRowCol( move->dstRow, move->dstCol ); 
@@ -324,6 +353,25 @@ static void board_addPawnCaptures( Board *board, uint64_t *captures, uint64_t *m
             }
         }
     }
+}
+
+static bool board_checkCastle( Board *board, MoveDirection direction ) {
+    bool isWhite = board->whiteToMove;
+    uint checkRow = isWhite ? 7 : 0;
+    uint rookCheckCol = direction == DIRECTION_LEFT ? 0 : 7;
+    uint blockCheckCol1 = direction == DIRECTION_LEFT ? 1 : 6;
+    uint blockCheckCol2 = direction == DIRECTION_LEFT ? 2 : 5;
+    uint blockCheckCol3 = 3;
+    //still need to check if king is in check, and make sure it does not pass through/
+    //finish on a square attacked by a piece
+    return ( board->pieceMap[checkRow][4].type == KING &&
+             board->pieceMap[checkRow][4].numMoves == 0 &&
+             board->pieceMap[checkRow][rookCheckCol].type == ROOK &&
+             board->pieceMap[checkRow][rookCheckCol].numMoves == 0 &&
+             board->pieceMap[checkRow][blockCheckCol1].type == NONE &&
+             board->pieceMap[checkRow][blockCheckCol2].type == NONE &&
+             ( direction == DIRECTION_RIGHT || 
+               board->pieceMap[checkRow][blockCheckCol3].type == NONE ) );
 }
 
 Move* board_getMovesForCurrentSide( Board *board, uint *numMoves ) {
@@ -410,6 +458,30 @@ Move* board_getMovesForCurrentSide( Board *board, uint *numMoves ) {
             }
             //printMoves( moves, row * 8 + col, symbol );
         }
+    }
+    if ( board_checkCastle( board, DIRECTION_LEFT ) ) {
+        if ( *numMoves == moveArraySize ) {
+            moveArraySize *= 2;
+            moveArray = realloc( moveArray, moveArraySize * sizeof( Move ) );
+        }
+        moveArray[*numMoves].moveType = MOVE_CASTLE;
+        moveArray[*numMoves].castleDirection = DIRECTION_LEFT;
+        moveArray[*numMoves].srcRow = board->whiteToMove ? 7 : 0;
+        moveArray[*numMoves].srcCol = 4; //king col
+        ++*numMoves;
+        
+    }
+    if ( board_checkCastle( board, DIRECTION_RIGHT ) ) {
+        if ( *numMoves == moveArraySize ) {
+            moveArraySize *= 2;
+            moveArray = realloc( moveArray, moveArraySize * sizeof( Move ) );
+        }
+        moveArray[*numMoves].moveType = MOVE_CASTLE;
+        moveArray[*numMoves].castleDirection = DIRECTION_RIGHT;
+        moveArray[*numMoves].srcRow = board->whiteToMove ? 7 : 0;
+        moveArray[*numMoves].srcCol = 4; //king col
+        ++*numMoves;
+        
     }
     return moveArray;
 }
