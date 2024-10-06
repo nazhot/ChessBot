@@ -216,6 +216,10 @@ void board_makeMove( Board *board, Move *move ) {
                 case CAPTURE_CHECKMATE:
                     break;
                 case CAPTURE_EN_PASSANT:
+                    memcpy( &board->pieceMap[move->dstRow][move->dstCol],
+                           &board->pieceMap[move->srcRow][move->srcCol], sizeof( Piece ) );
+                    board->pieceMap[move->srcRow][move->srcCol].type = NONE; //capturing piece
+                    board->pieceMap[move->srcRow][move->dstCol].type = NONE; //captured piece
                     break;
             }
             break;
