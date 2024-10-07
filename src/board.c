@@ -283,6 +283,73 @@ static void board_printMove( Move *move ) {
     printf( "\n" );
 }
 
+static void board_undoMove( Board *board ) {
+    if ( board->numPastMoves == 0 ){
+        return;
+    }
+    Move lastMove = board->pastMoves[--board->numPastMoves];
+    switch ( lastMove.moveType ) {
+        case MOVE_NORMAL:
+            memcpy( &board->pieceMap[lastMove.srcRow][lastMove.srcCol],
+                    &board->pieceMap[lastMove.dstRow][lastMove.dstCol], sizeof( Piece ) );
+            board->pieceMap[lastMove.dstRow][lastMove.dstCol].type = NONE;
+            break;
+        case MOVE_CASTLE:
+            if ( lastMove.castleDirection == DIRECTION_LEFT ) {
+                //king
+                memcpy( &board->pieceMap[lastMove.srcRow][2], &board->pieceMap[lastMove.srcRow][4],
+                       sizeof( Piece ) );
+                //rook
+                memcpy( &board->pieceMap[lastMove.srcRow][3], &board->pieceMap[lastMove.srcRow][0],
+                       sizeof( Piece ) );
+                board->pieceMap[lastMove.srcRow][0].type = NONE; //relastMove rook
+                ++board->pieceMap[lastMove.srcRow][3].numMoves; //increment rook lastMoves
+            } else {
+                //king
+                memcpy( &board->pieceMap[lastMove.srcRow][6], &board->pieceMap[lastMove.srcRow][4],
+                       sizeof( Piece ) );
+                //rook
+                memcpy( &board->pieceMap[lastMove.srcRow][5], &board->pieceMap[lastMove.srcRow][7],
+                       sizeof( Piece ) );
+                board->pieceMap[lastMove.srcRow][7].type = NONE; //relastMove rook
+                ++board->pieceMap[lastMove.srcRow][5].numMoves; //increment rook lastMoves
+            }
+            board->pieceMap[lastMove.srcRow][4].type = NONE; //relastMove king
+            break;
+        case MOVE_CHECK:
+            break;
+        case MOVE_CAPTURE:
+            switch ( lastMove.captureType ) {
+                case CAPTURE_NORMAL:
+                    memcpy( &board->pieceMap[lastMove.dstRow][lastMove.dstCol],
+                           &board->pieceMap[lastMove.srcRow][lastMove.srcCol], sizeof( Piece ) );
+                    board->pieceMap[lastMove.srcRow][lastMove.srcCol].type = NONE;
+                    break;
+                case CAPTURE_CHECK:
+                    break;
+                case CAPTURE_CHECKMATE:
+                    break;
+                case CAPTURE_EN_PASSANT:
+                    memcpy( &board->pieceMap[lastMove.dstRow][lastMove.dstCol],
+                           &board->pieceMap[lastMove.srcRow][lastMove.srcCol], sizeof( Piece ) );
+                    board->pieceMap[lastMove.srcRow][lastMove.srcCol].type = NONE; //capturing piece
+                    board->pieceMap[lastMove.srcRow][lastMove.dstCol].type = NONE; //captured piece
+                    break;
+            }
+            break;
+        case MOVE_CHECKMATE:
+            break;
+        case MOVE_PROMOTION:
+            memcpy( &board->pieceMap[lastMove.dstRow][lastMove.dstCol],
+                    &board->pieceMap[lastMove.srcRow][lastMove.srcCol], sizeof( Piece ) );
+            board->pieceMap[lastMove.srcRow][lastMove.srcCol].type = NONE;
+            board->pieceMap[lastMove.dstRow][lastMove.dstCol].type = lastMove.promotionType;
+            break;
+    }
+
+    board_updateBitFieldsFromPieces( board );
+}
+
 //currently does not check for if the pawn is at the end of the board, the pawn should
 //be promoted, hence there should never be a pawn checking for moves at the end of the board
 static void board_addPawnCaptures( Board *board, uint64_t *captures, uint64_t *moves, uint row, uint col ) {
@@ -475,7 +542,7 @@ Move* board_getMovesForCurrentSide( Board *board, uint *numMoves ) {
 
 Move* board_getMovesForOppositeSide( Board *board, uint *numMoves ) {
     board->whiteToMove = !board->whiteToMove;
-    Move *moveArray = board_getMovesForOppositeSide( board, numMoves );
+    Move *moveArray = board_getMovesForCurrentSide( board, numMoves );
     board->whiteToMove = !board->whiteToMove;
     return moveArray;
 }
@@ -499,6 +566,7 @@ static int randomIndex( const uint size ) {
 
     return r % size;
 }
+
 void board_decideAndMakeMove( Board *board ) {
     //get all of the moves of the currently moving side
     //do whatever algorithm to determine which move to do
