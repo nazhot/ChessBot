@@ -473,6 +473,13 @@ Move* board_getMovesForCurrentSide( Board *board, uint *numMoves ) {
     return moveArray;
 }
 
+Move* board_getMovesForOppositeSide( Board *board, uint *numMoves ) {
+    board->whiteToMove = !board->whiteToMove;
+    Move *moveArray = board_getMovesForOppositeSide( board, numMoves );
+    board->whiteToMove = !board->whiteToMove;
+    return moveArray;
+}
+
 static int randomIndex( const uint size ) {
     if ( ( size - 1 ) == RAND_MAX ) {
         return rand();

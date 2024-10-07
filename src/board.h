@@ -94,6 +94,7 @@ void board_clear( Board *board );
 void board_getMovesForSide( Board *board, bool whiteToMove, Move *moveArray, 
                             uint moveArraySize );
 Move* board_getMovesForCurrentSide( Board *board, uint *numMoves );
+Move* board_getMovesForOppositeSide( Board *board, uint *numMoves );
 void board_makeMove( Board *board, Move *move );
 void board_print( Board *board );
 void board_decideAndMakeMove( Board *board );
