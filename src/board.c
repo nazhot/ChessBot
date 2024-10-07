@@ -147,44 +147,6 @@ static void board_updateBitFieldsFromPieces( Board *board ) {
     }
 }
 
-/*
-void board_makeMove( Board *board, Move *move ) {
-    //if the row changed, update the 2-3 affected bitfields
-    if ( move->dstRow != move->srcRow ) {
-        board_update8BitField( &board->bitFields.allRows[( int ) move->dstRow], move->dstCol );
-        board_update8BitField( &board->bitFields.allRows[( int ) move->srcRow], move->srcCol );
-        if ( move->whiteMove ) {
-            board_update8BitField( &board->bitFields.whtRows[( int ) move->dstRow], move->dstCol );
-            board_update8BitField( &board->bitFields.whtRows[( int ) move->srcRow], move->srcCol );
-        } else {
-            board_update8BitField( &board->bitFields.blkRows[( int ) move->dstRow], move->dstCol );
-            board_update8BitField( &board->bitFields.blkRows[( int ) move->srcRow], move->srcCol );
-        }
-    }
-    if ( move->dstCol != move->srcCol ) {
-        board_update8BitField( &board->bitFields.allCols[( int ) move->dstCol], move->dstRow );
-        board_update8BitField( &board->bitFields.allCols[( int ) move->srcCol], move->srcRow );
-        if ( move->whiteMove ) {
-            board_update8BitField( &board->bitFields.whtCols[( int ) move->dstCol], move->dstRow );
-            board_update8BitField( &board->bitFields.whtCols[( int ) move->srcCol], move->srcRow );
-        } else {
-            board_update8BitField( &board->bitFields.blkCols[( int ) move->dstCol], move->dstRow );
-            board_update8BitField( &board->bitFields.blkCols[( int ) move->srcCol], move->srcRow );
-        }
-    }
-    board_update64BitField( &board->bitFields.allBoard, move->srcRow * 8 + move->srcCol, 
-                            move->dstRow * 8 + move->dstCol );
-    if ( move->whiteMove ) {
-        board_update64BitField( &board->bitFields.whtBoard, move->srcRow * 8 + move->srcCol, 
-                                move->dstRow * 8 + move->dstCol );
-    } else {
-        board_update64BitField( &board->bitFields.blkBoard, move->srcRow * 8 + move->srcCol, 
-                                move->dstRow * 8 + move->dstCol );
-    }
-    board->pastMoves[board->numPastMoves++] = *move;
-}
-*/
-
 void board_makeMove( Board *board, Move *move ) {
     ++board->pieceMap[move->srcRow][move->srcCol].numMoves;
     switch ( move->moveType ) {
