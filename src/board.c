@@ -438,9 +438,10 @@ bool board_moveLeadsToCheck( Board *board, Move *move ) {
         IndexTranslation *position = lookup_translateIndex( index );
         Piece piece = board->pieceMap[position->row][position->col];
         if ( ( piece.isWhite && !move->whiteMove ) ||
-               !piece.isWhite && move->whiteMove ) {
+             ( !piece.isWhite && move->whiteMove ) ) {
             continue;
         }
+        moves = 0;
         switch ( piece.type ) {
             case NONE:
             case KING:
@@ -576,6 +577,8 @@ Move* board_getMovesForCurrentSide( Board *board, uint *numMoves ) {
         moveArray[*numMoves].castleDirection = DIRECTION_LEFT;
         moveArray[*numMoves].srcRow = board->whiteToMove ? 7 : 0;
         moveArray[*numMoves].srcCol = 4; //king col
+        moveArray[*numMoves].dstRow = board->whiteToMove ? 7 : 0;
+        moveArray[*numMoves].dstCol = 2;
         ++*numMoves;
         
     }
@@ -588,6 +591,8 @@ Move* board_getMovesForCurrentSide( Board *board, uint *numMoves ) {
         moveArray[*numMoves].castleDirection = DIRECTION_RIGHT;
         moveArray[*numMoves].srcRow = board->whiteToMove ? 7 : 0;
         moveArray[*numMoves].srcCol = 4; //king col
+        moveArray[*numMoves].dstRow = board->whiteToMove ? 7 : 0;
+        moveArray[*numMoves].dstCol = 6;
         ++*numMoves;
         
     }
