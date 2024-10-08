@@ -187,14 +187,20 @@ void board_makeMove( Board *board, Move *move ) {
                 board->pieceMap[move->srcRow][move->dstCol].type = NONE; //captured piece
             }
             break;
-        case MOVE_CHECKMATE:
-            board->gameOver = true;
-            break;
         case MOVE_PROMOTION:
             board->pieceMap[move->dstRow][move->dstCol].type = move->promotionType;
             break;
         default:
             break;
+    }
+    if ( move->leadsToCheck ) {
+        if ( move->whiteMove ) {
+            board->blackInCheck = true;
+        } else {
+            board->whiteInCheck = true;
+        }
+    } else if ( move->leadsToCheckMate ) {
+        board->gameOver = true;
     }
     board_updateBitFieldsFromPieces( board );
     memcpy( &board->pastMoves[board->numPastMoves++], move, sizeof( Move ) );
@@ -313,12 +319,6 @@ static void board_undoMove( Board *board ) {
             } else {
                 board->pieceMap[lastMove.dstRow][lastMove.dstCol].type = lastMove.pieceCaptured;
             }
-            if ( lastMove.captureType == CAPTURE_CHECKMATE ) {
-                board->gameOver = false;
-            }
-            break;
-        case MOVE_CHECKMATE:
-            board->gameOver = false;
             break;
         case MOVE_PROMOTION:
             board->pieceMap[lastMove.srcRow][lastMove.srcCol].type = PAWN;
@@ -327,13 +327,14 @@ static void board_undoMove( Board *board ) {
             break;
     }
 
-    if ( lastMove.moveType == MOVE_CHECK || 
-         ( lastMove.moveType == MOVE_CAPTURE && lastMove.captureType == CAPTURE_CHECK ) ) {
+    if ( lastMove.leadsToCheck ) {
         if ( lastMove.whiteMove ) {
            board->blackInCheck = false; 
         } else {
             board->whiteInCheck = false;
         }
+    } else if ( lastMove.leadsToCheckMate ) {
+        board->gameOver = false;
     }
 
     board_updateBitFieldsFromPieces( board );
@@ -525,6 +526,7 @@ Move* board_getMovesForCurrentSide( Board *board, uint *numMoves ) {
                         moveArray[*numMoves].srcCol = col;
                         moveArray[*numMoves].dstRow = i / 8;
                         moveArray[*numMoves].dstCol = i % 8;
+                        moveArray[*numMoves].leadsToCheck = board_moveLeadsToCheck( board, &moveArray[*numMoves] );
                         ++*numMoves;
                     }
                     continue;
@@ -536,6 +538,7 @@ Move* board_getMovesForCurrentSide( Board *board, uint *numMoves ) {
                 moveArray[*numMoves].srcCol = col;
                 moveArray[*numMoves].dstRow = i / 8;
                 moveArray[*numMoves].dstCol = i % 8;
+                moveArray[*numMoves].leadsToCheck = board_moveLeadsToCheck( board, &moveArray[*numMoves] );
 
                 if ( captures >> ( 63 - i ) & 1  ) {
                     moveArray[*numMoves].moveType = MOVE_CAPTURE;
@@ -545,6 +548,7 @@ Move* board_getMovesForCurrentSide( Board *board, uint *numMoves ) {
                         moveArray[*numMoves].captureType = CAPTURE_EN_PASSANT;
                         moveArray[*numMoves].pieceCaptured = PAWN;
                     }
+                    moveArray[*numMoves].leadsToCheck = board_moveLeadsToCheck( board, &moveArray[*numMoves] );
                 }
 
                 //board_printMove( &moveArray[*numMoves] );
@@ -566,6 +570,7 @@ Move* board_getMovesForCurrentSide( Board *board, uint *numMoves ) {
         moveArray[*numMoves].srcCol = 4; //king col
         moveArray[*numMoves].dstRow = board->whiteToMove ? 7 : 0;
         moveArray[*numMoves].dstCol = 2;
+        moveArray[*numMoves].leadsToCheck = board_moveLeadsToCheck( board, &moveArray[*numMoves] );
         ++*numMoves;
         
     }
@@ -581,6 +586,7 @@ Move* board_getMovesForCurrentSide( Board *board, uint *numMoves ) {
         moveArray[*numMoves].srcCol = 4; //king col
         moveArray[*numMoves].dstRow = board->whiteToMove ? 7 : 0;
         moveArray[*numMoves].dstCol = 6;
+        moveArray[*numMoves].leadsToCheck = board_moveLeadsToCheck( board, &moveArray[*numMoves] );
         ++*numMoves;
         
     }

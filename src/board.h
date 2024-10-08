@@ -19,8 +19,6 @@ typedef struct IndexTranslation {
 typedef enum MoveType {
     MOVE_NORMAL,
     MOVE_CASTLE,
-    MOVE_CHECK,
-    MOVE_CHECKMATE,
     MOVE_CAPTURE,
     MOVE_PROMOTION
 } MoveType;
@@ -28,8 +26,6 @@ typedef enum MoveType {
 typedef enum CaptureType {
     CAPTURE_NORMAL,
     CAPTURE_EN_PASSANT,
-    CAPTURE_CHECK,
-    CAPTURE_CHECKMATE
 } CaptureType;
 
 typedef enum MoveDirection {
@@ -56,6 +52,8 @@ typedef struct Move {
     uint dstCol;
     uint srcRow;
     uint srcCol;
+    bool leadsToCheck;
+    bool leadsToCheckMate;
 } Move;
 
 //Has all of the information about a board. The bitFields member contains all of
