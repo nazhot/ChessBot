@@ -80,6 +80,7 @@ static void initializeIndexTranslations() {
         uint diaUpRightIndex = rowDiff < colDiff ? rowDiff : colDiff;
         uint diaDownRightIndex = row < col ? row : col;
 
+        indexTranslations[i].index = i;
         indexTranslations[i].row = row;
         indexTranslations[i].col = col;
         indexTranslations[i].diaUpRight = rcToUpRight[row][col];

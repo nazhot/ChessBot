@@ -68,6 +68,9 @@ Board* board_initialize() {
     board->whiteInCheck = false;
     board->blackInCheck = false;
 
+    board->blackKing = *lookup_translateIndex( 4 );
+    board->whiteKing = *lookup_translateIndex( 60 );
+
     for ( uint row = 2; row < 6; ++row ) {
         for ( uint col = 0; col < 8; ++col ) {
             board->pieceMap[row][col] = initializePiece( NONE, true );
@@ -404,7 +407,6 @@ static bool board_checkCastle( Board *board, MoveDirection direction ) {
 }
 
 uint64_t board_getMoveBitFieldForPiece( Board *board, uint row, uint col ) {
-    uint64_t moves;
     if ( board->pieceMap[row][col].type == NONE ) {
         return 0;
     }
@@ -424,7 +426,58 @@ uint64_t board_getMoveBitFieldForPiece( Board *board, uint row, uint col ) {
         case ROOK:
             return getRookMoves( board, row, col );
     }
+    return 0;
+}
 
+bool board_moveLeadsToCheck( Board *board, Move *move ) {
+    board_makeMove( board, move );
+    bool leadsToCheck = false;
+    uint64_t moves;
+    IndexTranslation kingPosition = move->whiteMove ? board->blackKing : board->whiteKing;
+    for ( uint index = 0; index < 64; ++index ) {
+        IndexTranslation *position = lookup_translateIndex( index );
+        Piece piece = board->pieceMap[position->row][position->col];
+        switch ( piece.type ) {
+            case NONE:
+            case KING:
+                break;
+            case PAWN:
+                //TODO: this
+                break;
+            case ROOK:
+                if ( position->row != kingPosition.row &&
+                     position->col != kingPosition.col ) {
+                    break;
+                }
+                moves = getRookMoves( board, position->row, position->col );  
+                break;
+            case KNIGHT:
+                moves = getKnightMoves( position->row, position->col );
+                break;
+            case BISHOP:
+                if ( position->diaUpRight != kingPosition.diaUpRight &&
+                     position->diaDownRight != kingPosition.diaDownRight ) {
+                    break;
+                }
+                moves = getBishopMoves( board, position->row, position->col );  
+                break;
+            case QUEEN:
+                if ( position->row != kingPosition.row &&
+                     position->col != kingPosition.col  &&
+                     position->diaUpRight != kingPosition.diaUpRight &&
+                     position->diaDownRight != kingPosition.diaDownRight ) {
+                    break;
+                }
+                moves = getQueenMoves( board, position->row, position->col );  
+                break;
+        }
+        leadsToCheck = ( moves >> ( 63 - kingPosition.index ) & 1 );
+        if ( leadsToCheck ) {
+            break;
+        }
+    }
+    board_undoMove( board );
+    return leadsToCheck;
 }
 
 Move* board_getMovesForCurrentSide( Board *board, uint *numMoves ) {

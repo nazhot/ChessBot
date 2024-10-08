@@ -6,6 +6,16 @@
 #include <stdbool.h>
 #include "pieces.h"
 
+typedef struct IndexTranslation {
+    uint index;
+    uint row;
+    uint col;
+    uint diaUpRight;
+    uint diaUpRightIndex;
+    uint diaDownRight;
+    uint diaDownRightIndex;
+} IndexTranslation;
+
 typedef enum MoveType {
     MOVE_NORMAL,
     MOVE_CASTLE,
@@ -82,6 +92,8 @@ typedef struct Board {
     bool blackInCheck;
     Move pastMoves[256];
     uint numPastMoves;
+    IndexTranslation whiteKing;
+    IndexTranslation blackKing;
 } Board; 
 
 /**

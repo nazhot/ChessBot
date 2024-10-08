@@ -5,15 +5,6 @@
 #include <stdlib.h>
 #include "board.h"
 
-typedef struct IndexTranslation {
-    uint row;
-    uint col;
-    uint diaUpRight;
-    uint diaUpRightIndex;
-    uint diaDownRight;
-    uint diaDownRightIndex;
-} IndexTranslation;
-
 void initializeLookupTables();
 void lookup_setHorizontalMoves( uint64_t *moves, unsigned char rowBitMap, uint rowNumber,
                                 uint colNumber );
