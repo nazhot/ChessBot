@@ -21,4 +21,5 @@ uint64_t getRookMoves( Board *board, uint row, uint col );
 uint64_t getBishopMoves( Board *board, uint row, uint col );
 uint64_t getKnightMoves( uint row, uint col );
 uint64_t getPawnMoves( Board *board, uint row, uint col );
+uint64_t lookup_getPawnCaptures( uint index, bool isWhite );
 #endif

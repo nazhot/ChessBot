@@ -44,7 +44,7 @@ uint rcToDownRightIndex[8][8] = { { 0, 0, 0, 0, 0, 0, 0, 0 },
                                   { 0, 1, 2, 3, 4, 5, 6, 6 },
                                   { 0, 1, 2, 3, 4, 5, 6, 7 } };
 
-uint64_t pawnLookupTable[64][2] = {0};
+uint64_t pawnCaptureLookupTable[64][2] = {0};
 
 IndexTranslation indexTranslations[64] = {0};
 
@@ -101,21 +101,13 @@ static void initializePawnLookupTable() {
         for ( uint col = 0; col < 8; ++col ) {
             index = row * 8 + col;
             if ( row > 0 ) {
-                addMove( row + 1, col - 1, &pawnLookupTable[index][1] );
-                addMove( row + 1, col, &pawnLookupTable[index][1] );
-                addMove( row + 1, col + 1, &pawnLookupTable[index][1] );
-                if ( row == 1 ) {
-                    addMove( row + 2, col, &pawnLookupTable[index][1] );
-                }
+                addMove( row + 1, col - 1, &pawnCaptureLookupTable[index][1] );
+                addMove( row + 1, col + 1, &pawnCaptureLookupTable[index][1] );
             }
 
             if ( row < 7 ) {
-                addMove( row - 1, col - 1, &pawnLookupTable[index][0] );
-                addMove( row - 1, col, &pawnLookupTable[index][0] );
-                addMove( row - 1, col + 1, &pawnLookupTable[index][0] );
-                if ( row == 6 ) {
-                    addMove( row - 2, col, &pawnLookupTable[index][0] );
-                }
+                addMove( row - 1, col - 1, &pawnCaptureLookupTable[index][0] );
+                addMove( row - 1, col + 1, &pawnCaptureLookupTable[index][0] );
             }
         }
     }
@@ -337,4 +329,8 @@ uint64_t getPawnMoves( Board *board, uint row, uint col ) {
     }
     addMove( row + ( offset + offset ), col, &moves );
     return moves;
+}
+
+uint64_t lookup_getPawnCaptures( uint index, bool isWhite ) {
+    return pawnCaptureLookupTable[index][isWhite ? 0 : 1];
 }

@@ -437,12 +437,16 @@ bool board_moveLeadsToCheck( Board *board, Move *move ) {
     for ( uint index = 0; index < 64; ++index ) {
         IndexTranslation *position = lookup_translateIndex( index );
         Piece piece = board->pieceMap[position->row][position->col];
+        if ( ( piece.isWhite && !move->whiteMove ) ||
+               !piece.isWhite && move->whiteMove ) {
+            continue;
+        }
         switch ( piece.type ) {
             case NONE:
             case KING:
                 break;
             case PAWN:
-                //TODO: this
+                moves = lookup_getPawnCaptures( index, move->whiteMove );
                 break;
             case ROOK:
                 if ( position->row != kingPosition.row &&
