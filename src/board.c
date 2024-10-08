@@ -67,6 +67,7 @@ Board* board_initialize() {
     board->numPastMoves = 0;
     board->whiteInCheck = false;
     board->blackInCheck = false;
+    board->gameOver = false;
 
     board->blackKing = *lookup_translateIndex( 4 );
     board->whiteKing = *lookup_translateIndex( 60 );
@@ -152,62 +153,39 @@ static void board_updateBitFieldsFromPieces( Board *board ) {
 
 void board_makeMove( Board *board, Move *move ) {
     ++board->pieceMap[move->srcRow][move->srcCol].numMoves;
+    memcpy( &board->pieceMap[move->dstRow][move->dstCol],
+            &board->pieceMap[move->srcRow][move->srcCol], sizeof( Piece ) );
+    board->pieceMap[move->srcRow][move->srcCol].type = NONE;
     switch ( move->moveType ) {
-        case MOVE_NORMAL:
-            memcpy( &board->pieceMap[move->dstRow][move->dstCol],
-                    &board->pieceMap[move->srcRow][move->srcCol], sizeof( Piece ) );
-            board->pieceMap[move->srcRow][move->srcCol].type = NONE;
-            break;
         case MOVE_CASTLE:
             if ( move->castleDirection == DIRECTION_LEFT ) {
-                //king
-                memcpy( &board->pieceMap[move->srcRow][2], &board->pieceMap[move->srcRow][4],
-                       sizeof( Piece ) );
+                //king is taken care of with upper code
                 //rook
                 memcpy( &board->pieceMap[move->srcRow][3], &board->pieceMap[move->srcRow][0],
                        sizeof( Piece ) );
                 board->pieceMap[move->srcRow][0].type = NONE; //remove rook
                 ++board->pieceMap[move->srcRow][3].numMoves; //increment rook moves
             } else {
-                //king
-                memcpy( &board->pieceMap[move->srcRow][6], &board->pieceMap[move->srcRow][4],
-                       sizeof( Piece ) );
+                //king is taken care of with upper code
                 //rook
                 memcpy( &board->pieceMap[move->srcRow][5], &board->pieceMap[move->srcRow][7],
                        sizeof( Piece ) );
                 board->pieceMap[move->srcRow][7].type = NONE; //remove rook
                 ++board->pieceMap[move->srcRow][5].numMoves; //increment rook moves
             }
-            board->pieceMap[move->srcRow][4].type = NONE; //remove king
-            break;
-        case MOVE_CHECK:
             break;
         case MOVE_CAPTURE:
-            switch ( move->captureType ) {
-                case CAPTURE_NORMAL:
-                    memcpy( &board->pieceMap[move->dstRow][move->dstCol],
-                           &board->pieceMap[move->srcRow][move->srcCol], sizeof( Piece ) );
-                    board->pieceMap[move->srcRow][move->srcCol].type = NONE;
-                    break;
-                case CAPTURE_CHECK:
-                    break;
-                case CAPTURE_CHECKMATE:
-                    break;
-                case CAPTURE_EN_PASSANT:
-                    memcpy( &board->pieceMap[move->dstRow][move->dstCol],
-                           &board->pieceMap[move->srcRow][move->srcCol], sizeof( Piece ) );
-                    board->pieceMap[move->srcRow][move->srcCol].type = NONE; //capturing piece
-                    board->pieceMap[move->srcRow][move->dstCol].type = NONE; //captured piece
-                    break;
+            if ( move->captureType == CAPTURE_EN_PASSANT ) {
+                board->pieceMap[move->srcRow][move->dstCol].type = NONE; //captured piece
             }
             break;
         case MOVE_CHECKMATE:
+            board->gameOver = true;
             break;
         case MOVE_PROMOTION:
-            memcpy( &board->pieceMap[move->dstRow][move->dstCol],
-                    &board->pieceMap[move->srcRow][move->srcCol], sizeof( Piece ) );
-            board->pieceMap[move->srcRow][move->srcCol].type = NONE;
             board->pieceMap[move->dstRow][move->dstCol].type = move->promotionType;
+            break;
+        default:
             break;
     }
     board_updateBitFieldsFromPieces( board );

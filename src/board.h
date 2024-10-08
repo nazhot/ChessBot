@@ -94,6 +94,7 @@ typedef struct Board {
     uint numPastMoves;
     IndexTranslation whiteKing;
     IndexTranslation blackKing;
+    bool gameOver;
 } Board; 
 
 /**
