@@ -277,60 +277,63 @@ static void board_undoMove( Board *board ) {
         return;
     }
     Move lastMove = board->pastMoves[--board->numPastMoves];
+    --board->pieceMap[lastMove.dstRow][lastMove.dstCol].numMoves;
+    memcpy( &board->pieceMap[lastMove.srcRow][lastMove.srcCol],
+            &board->pieceMap[lastMove.dstRow][lastMove.dstCol], sizeof( Piece ) );
+    board->pieceMap[lastMove.dstRow][lastMove.dstCol].type = NONE;
+    //update king's position in board
+    if ( lastMove.pieceType == KING ) {
+        if ( lastMove.whiteMove ) {
+            board->whiteKing = *lookup_translateIndex( lastMove.srcRow * 8 + lastMove.srcCol );
+        } else {
+            board->blackKing = *lookup_translateIndex( lastMove.srcRow * 8 + lastMove.srcCol );
+        }
+    }
     switch ( lastMove.moveType ) {
-        case MOVE_NORMAL:
-            memcpy( &board->pieceMap[lastMove.srcRow][lastMove.srcCol],
-                    &board->pieceMap[lastMove.dstRow][lastMove.dstCol], sizeof( Piece ) );
-            board->pieceMap[lastMove.dstRow][lastMove.dstCol].type = NONE;
-            break;
         case MOVE_CASTLE:
             if ( lastMove.castleDirection == DIRECTION_LEFT ) {
-                //king
-                memcpy( &board->pieceMap[lastMove.srcRow][4], &board->pieceMap[lastMove.srcRow][2],
-                       sizeof( Piece ) );
+                //king is taken care of with upper code
                 //rook
                 memcpy( &board->pieceMap[lastMove.srcRow][0], &board->pieceMap[lastMove.srcRow][3],
                        sizeof( Piece ) );
-                --board->pieceMap[lastMove.srcRow][0].numMoves; //decrement rook lastMoves
+                board->pieceMap[lastMove.srcRow][0].type = ROOK; //remove rook
+                --board->pieceMap[lastMove.srcRow][0].numMoves; //increment rook moves
             } else {
-                //king
-                memcpy( &board->pieceMap[lastMove.srcRow][4], &board->pieceMap[lastMove.srcRow][6],
-                       sizeof( Piece ) );
+                //king is taken care of with upper code
                 //rook
                 memcpy( &board->pieceMap[lastMove.srcRow][7], &board->pieceMap[lastMove.srcRow][5],
                        sizeof( Piece ) );
-                ++board->pieceMap[lastMove.srcRow][7].numMoves; //decrement rook lastMoves
+                board->pieceMap[lastMove.srcRow][7].type = ROOK; //remove rook
+                --board->pieceMap[lastMove.srcRow][7].numMoves; //increment rook moves
             }
             break;
-        case MOVE_CHECK:
-            break;
         case MOVE_CAPTURE:
-            switch ( lastMove.captureType ) {
-                case CAPTURE_NORMAL:
-                    memcpy( &board->pieceMap[lastMove.dstRow][lastMove.dstCol],
-                           &board->pieceMap[lastMove.srcRow][lastMove.srcCol], sizeof( Piece ) );
-                    board->pieceMap[lastMove.srcRow][lastMove.srcCol].type = NONE;
-                    break;
-                case CAPTURE_CHECK:
-                    break;
-                case CAPTURE_CHECKMATE:
-                    break;
-                case CAPTURE_EN_PASSANT:
-                    memcpy( &board->pieceMap[lastMove.dstRow][lastMove.dstCol],
-                           &board->pieceMap[lastMove.srcRow][lastMove.srcCol], sizeof( Piece ) );
-                    board->pieceMap[lastMove.srcRow][lastMove.srcCol].type = NONE; //capturing piece
-                    board->pieceMap[lastMove.srcRow][lastMove.dstCol].type = NONE; //captured piece
-                    break;
+            if ( lastMove.captureType == CAPTURE_EN_PASSANT ) {
+                board->pieceMap[lastMove.srcRow][lastMove.dstCol].type = lastMove.pieceCaptured; //captured piece
+            } else {
+                board->pieceMap[lastMove.dstRow][lastMove.dstCol].type = lastMove.pieceCaptured;
+            }
+            if ( lastMove.captureType == CAPTURE_CHECKMATE ) {
+                board->gameOver = false;
             }
             break;
         case MOVE_CHECKMATE:
+            board->gameOver = false;
             break;
         case MOVE_PROMOTION:
-            memcpy( &board->pieceMap[lastMove.dstRow][lastMove.dstCol],
-                    &board->pieceMap[lastMove.srcRow][lastMove.srcCol], sizeof( Piece ) );
-            board->pieceMap[lastMove.srcRow][lastMove.srcCol].type = NONE;
-            board->pieceMap[lastMove.dstRow][lastMove.dstCol].type = lastMove.promotionType;
+            board->pieceMap[lastMove.srcRow][lastMove.srcCol].type = PAWN;
             break;
+        default:
+            break;
+    }
+
+    if ( lastMove.moveType == MOVE_CHECK || 
+         ( lastMove.moveType == MOVE_CAPTURE && lastMove.captureType == CAPTURE_CHECK ) ) {
+        if ( lastMove.whiteMove ) {
+           board->blackInCheck = false; 
+        } else {
+            board->whiteInCheck = false;
+        }
     }
 
     board_updateBitFieldsFromPieces( board );
@@ -489,10 +492,7 @@ Move* board_getMovesForCurrentSide( Board *board, uint *numMoves ) {
             } else {
                 board_addPawnCaptures( board, &captures, &moves, row, col );
             }
-            //board_printBitField( board->bitFields.allRows[row], "Row field: " );
-            //printf( "\n" );
-            //board_printBitField( board->bitFields.allRows[row], "Row field: " );
-            //printf( "\n" );
+
             bool enPassant;
             for ( uint i = 0; i < 64; ++i ) {
                 enPassant = false;
