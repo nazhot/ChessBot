@@ -24,10 +24,10 @@ void lookup_setDiagonalMoves( uint64_t *moves, unsigned char diaBitMapUpRight,
 IndexTranslation* lookup_translateIndex( uint index );
 void printMoves( uint64_t moves, uint indexToCheck, char symbol );
 
-void getKingMoves( uint row, uint col, uint64_t *moves );
-void getQueenMoves( Board *board, uint row, uint col, uint64_t *moves );
-void getRookMoves( Board *board, uint row, uint col, uint64_t *moves );
-void getBishopMoves( Board *board, uint row, uint col, uint64_t *moves );
-void getKnightMoves( uint row, uint col, uint64_t *moves );
-void getPawnMoves( Board *board, uint row, uint col, uint64_t *moves );
+uint64_t getKingMoves( uint row, uint col );
+uint64_t getQueenMoves( Board *board, uint row, uint col );
+uint64_t getRookMoves( Board *board, uint row, uint col );
+uint64_t getBishopMoves( Board *board, uint row, uint col );
+uint64_t getKnightMoves( uint row, uint col );
+uint64_t getPawnMoves( Board *board, uint row, uint col );
 #endif

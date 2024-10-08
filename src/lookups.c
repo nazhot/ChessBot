@@ -278,54 +278,62 @@ void lookup_setDiagonalMoves( uint64_t *moves, unsigned char diaBitMapUpRight,
     }
 }
 
-void getKingMoves( uint row, uint col, uint64_t *moves ) {
-    if ( row > 7 || col > 7 ) return;
-    *moves = kingLookupTable[row * 8 + col];
+uint64_t getKingMoves( uint row, uint col ) {
+    if ( row > 7 || col > 7 ) return 0;
+    return kingLookupTable[row * 8 + col];
 }
 
-void getQueenMoves( Board *board, uint row, uint col, uint64_t *moves ) {
-    if ( row > 7 || col > 7 ) return;
-    lookup_setVerticalMoves( moves, board->bitFields.allCols[col], row, col );
-    lookup_setHorizontalMoves( moves, board->bitFields.allRows[row], row, col );
-    lookup_setDiagonalMoves( moves, board->bitFields.allDiasUpRight[rcToUpRight[row][col]], 
+uint64_t getQueenMoves( Board *board, uint row, uint col ) {
+    if ( row > 7 || col > 7 ) return 0;
+    uint64_t moves = 0;
+    lookup_setVerticalMoves( &moves, board->bitFields.allCols[col], row, col );
+    lookup_setHorizontalMoves( &moves, board->bitFields.allRows[row], row, col );
+    lookup_setDiagonalMoves( &moves, board->bitFields.allDiasUpRight[rcToUpRight[row][col]], 
                              board->bitFields.allDiasDownRight[rcToDownRight[row][col]],
                              row, col );
+    return moves;
 }
 
-void getRookMoves( Board *board, uint row, uint col, uint64_t *moves ) {
-    if ( row > 7 || col > 7 ) return;
-    lookup_setVerticalMoves( moves, board->bitFields.allCols[col], row, col );
-    lookup_setHorizontalMoves( moves, board->bitFields.allRows[row], row, col );
+uint64_t getRookMoves( Board *board, uint row, uint col ) {
+    if ( row > 7 || col > 7 ) return 0;
+    uint64_t moves = 0;
+    lookup_setVerticalMoves( &moves, board->bitFields.allCols[col], row, col );
+    lookup_setHorizontalMoves( &moves, board->bitFields.allRows[row], row, col );
+    return moves;
 }
 
-void getBishopMoves( Board *board, uint row, uint col, uint64_t *moves ) {
-    if ( row > 7 || col > 7 ) return;
-    lookup_setDiagonalMoves( moves, board->bitFields.allDiasUpRight[rcToUpRight[row][col]], 
+uint64_t getBishopMoves( Board *board, uint row, uint col ) {
+    if ( row > 7 || col > 7 ) return 0;
+    uint64_t moves = 0;
+    lookup_setDiagonalMoves( &moves, board->bitFields.allDiasUpRight[rcToUpRight[row][col]], 
                              board->bitFields.allDiasDownRight[rcToDownRight[row][col]],
                              row, col );
+    return moves;
 }
 
-void getKnightMoves( uint row, uint col, uint64_t *moves ) {
-    if ( row > 7 || col > 7 ) return;
-    *moves = knightLookupTable[row * 8 + col];
+uint64_t getKnightMoves( uint row, uint col ) {
+    if ( row > 7 || col > 7 ) return 0;
+    return knightLookupTable[row * 8 + col];
 }
 
 //sets moves to only the moves for moving directly up/down, since a pawn
 //can't capture with those. Then sets the captures for diagonals
-void getPawnMoves( Board *board, uint row, uint col, uint64_t *moves ) {
+uint64_t getPawnMoves( Board *board, uint row, uint col ) {
     bool isWhite = board->pieceMap[row][col].isWhite;
     uint tooFarRow = isWhite ? 0 : 7;
     if ( row == tooFarRow ) {
-        return;
+        return 0;
     }
     int offset = isWhite ? -1 : 1;
     if ( board->pieceMap[row + offset][col].type != NONE ) {
-        return;
+        return 0;
     }
-    addMove( row + offset, col, moves);
+    uint64_t moves = 0;
+    addMove( row + offset, col, &moves);
     uint doubleMoveRow = isWhite ? 6 : 1;
     if ( row != doubleMoveRow || board->pieceMap[row + ( offset + offset )][col].type != NONE ) {
-        return;
+        return moves;
     }
-    addMove( row + ( offset + offset ), col, moves );
+    addMove( row + ( offset + offset ), col, &moves );
+    return moves;
 }

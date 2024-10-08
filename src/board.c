@@ -297,24 +297,21 @@ static void board_undoMove( Board *board ) {
         case MOVE_CASTLE:
             if ( lastMove.castleDirection == DIRECTION_LEFT ) {
                 //king
-                memcpy( &board->pieceMap[lastMove.srcRow][2], &board->pieceMap[lastMove.srcRow][4],
+                memcpy( &board->pieceMap[lastMove.srcRow][4], &board->pieceMap[lastMove.srcRow][2],
                        sizeof( Piece ) );
                 //rook
-                memcpy( &board->pieceMap[lastMove.srcRow][3], &board->pieceMap[lastMove.srcRow][0],
+                memcpy( &board->pieceMap[lastMove.srcRow][0], &board->pieceMap[lastMove.srcRow][3],
                        sizeof( Piece ) );
-                board->pieceMap[lastMove.srcRow][0].type = NONE; //relastMove rook
-                ++board->pieceMap[lastMove.srcRow][3].numMoves; //increment rook lastMoves
+                --board->pieceMap[lastMove.srcRow][0].numMoves; //decrement rook lastMoves
             } else {
                 //king
-                memcpy( &board->pieceMap[lastMove.srcRow][6], &board->pieceMap[lastMove.srcRow][4],
+                memcpy( &board->pieceMap[lastMove.srcRow][4], &board->pieceMap[lastMove.srcRow][6],
                        sizeof( Piece ) );
                 //rook
-                memcpy( &board->pieceMap[lastMove.srcRow][5], &board->pieceMap[lastMove.srcRow][7],
+                memcpy( &board->pieceMap[lastMove.srcRow][7], &board->pieceMap[lastMove.srcRow][5],
                        sizeof( Piece ) );
-                board->pieceMap[lastMove.srcRow][7].type = NONE; //relastMove rook
-                ++board->pieceMap[lastMove.srcRow][5].numMoves; //increment rook lastMoves
+                ++board->pieceMap[lastMove.srcRow][7].numMoves; //decrement rook lastMoves
             }
-            board->pieceMap[lastMove.srcRow][4].type = NONE; //relastMove king
             break;
         case MOVE_CHECK:
             break;
@@ -406,6 +403,30 @@ static bool board_checkCastle( Board *board, MoveDirection direction ) {
                board->pieceMap[checkRow][blockCheckCol3].type == NONE ) );
 }
 
+uint64_t board_getMoveBitFieldForPiece( Board *board, uint row, uint col ) {
+    uint64_t moves;
+    if ( board->pieceMap[row][col].type == NONE ) {
+        return 0;
+    }
+
+    switch( board->pieceMap[row][col].type ) {
+        case NONE:
+        case PAWN:
+            return getPawnMoves( board, row, col );
+        case KNIGHT:
+            return getKnightMoves( row, col );
+        case QUEEN:
+            return getQueenMoves( board, row, col );
+        case BISHOP:
+            return getBishopMoves( board, row, col );
+        case KING:
+            return getKingMoves( row, col );
+        case ROOK:
+            return getRookMoves( board, row, col );
+    }
+
+}
+
 Move* board_getMovesForCurrentSide( Board *board, uint *numMoves ) {
     uint moveArraySize = 32;
     Move *moveArray = malloc( moveArraySize * sizeof( Move ) ); 
@@ -413,36 +434,12 @@ Move* board_getMovesForCurrentSide( Board *board, uint *numMoves ) {
     uint64_t moves, captures;
     for ( uint row = 0; row < 8; ++row ) {
         for ( uint col = 0; col < 8; ++col ) {
-            moves = 0;
             captures = 0;
-            if ( board->pieceMap[row][col].type == NONE ) {
-                continue;
-            }
             if ( ( board->whiteToMove && !board->pieceMap[row][col].isWhite ) ||
                 ( !board->whiteToMove && board->pieceMap[row][col].isWhite ) ) {
                 continue;
             }
-            switch( board->pieceMap[row][col].type ) {
-                case NONE:
-                case PAWN:
-                    getPawnMoves( board, row, col, &moves );
-                    break;
-                case KNIGHT:
-                    getKnightMoves( row, col, &moves );
-                    break;
-                case QUEEN:
-                    getQueenMoves( board, row, col, &moves );
-                    break;
-                case BISHOP:
-                    getBishopMoves( board, row, col, &moves );
-                    break;
-                case KING:
-                    getKingMoves( row, col, &moves );
-                    break;
-                case ROOK:
-                    getRookMoves( board, row, col, &moves );
-                    break;
-            }
+            moves = board_getMoveBitFieldForPiece( board, row, col);
             if ( board->pieceMap[row][col].type != PAWN ) {
                 board_getCapturesFromMoves( board, &captures, &moves, board->pieceMap[row][col].isWhite );
             } else {
