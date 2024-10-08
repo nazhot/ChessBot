@@ -156,6 +156,14 @@ void board_makeMove( Board *board, Move *move ) {
     memcpy( &board->pieceMap[move->dstRow][move->dstCol],
             &board->pieceMap[move->srcRow][move->srcCol], sizeof( Piece ) );
     board->pieceMap[move->srcRow][move->srcCol].type = NONE;
+    //update king's position in board
+    if ( move->pieceType == KING ) {
+        if ( move->whiteMove ) {
+            board->whiteKing = *lookup_translateIndex( move->dstRow * 8 + move->dstCol );
+        } else {
+            board->blackKing = *lookup_translateIndex( move->dstRow * 8 + move->dstCol );
+        }
+    }
     switch ( move->moveType ) {
         case MOVE_CASTLE:
             if ( move->castleDirection == DIRECTION_LEFT ) {
@@ -552,6 +560,7 @@ Move* board_getMovesForCurrentSide( Board *board, uint *numMoves ) {
             moveArray = realloc( moveArray, moveArraySize * sizeof( Move ) );
         }
         moveArray[*numMoves].moveType = MOVE_CASTLE;
+        moveArray[*numMoves].pieceType = KING;
         moveArray[*numMoves].castleDirection = DIRECTION_LEFT;
         moveArray[*numMoves].srcRow = board->whiteToMove ? 7 : 0;
         moveArray[*numMoves].srcCol = 4; //king col
@@ -566,6 +575,7 @@ Move* board_getMovesForCurrentSide( Board *board, uint *numMoves ) {
             moveArray = realloc( moveArray, moveArraySize * sizeof( Move ) );
         }
         moveArray[*numMoves].moveType = MOVE_CASTLE;
+        moveArray[*numMoves].pieceType = KING;
         moveArray[*numMoves].castleDirection = DIRECTION_RIGHT;
         moveArray[*numMoves].srcRow = board->whiteToMove ? 7 : 0;
         moveArray[*numMoves].srcCol = 4; //king col
