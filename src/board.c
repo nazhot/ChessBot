@@ -110,7 +110,13 @@ static void board_updateBitFieldsFromPieces( Board *board ) {
     for ( uint i = 0; i < 64; ++i ) {
         IndexTranslation *indexes = lookup_translateIndex( i );
         Piece piece = board->pieceMap[indexes->row][indexes->col];
-        if ( piece.type == NONE ) {
+        if ( piece.type == KING ) {
+            if ( piece.isWhite ) {
+                board->whiteKing = *indexes;
+            } else {
+                board->blackKing = *indexes;
+            }
+        } else if ( piece.type == NONE ) {
             continue;
         }
 
@@ -676,6 +682,8 @@ void board_playGame( Board *board ) {
             index = atoi( buffer );
         }
         board_printMove( &moves[index] );
+        printf( "White king pos: (%u, %u)\n", board->whiteKing.row, board->whiteKing.col );
+        printf( "Black king pos: (%u, %u)\n", board->blackKing.row, board->blackKing.col );
         board_makeMove( board, &moves[index] );
         free( moves );
     }
