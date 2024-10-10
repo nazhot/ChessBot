@@ -424,6 +424,8 @@ uint64_t board_getMoveBitFieldForPiece( Board *board, uint row, uint col ) {
 }
 
 bool board_moveLeadsToCheck( Board *board, Move *move ) {
+    Piece lastPieceMap[8][8] = {0};
+    memcpy( lastPieceMap, board->pieceMap, sizeof( Piece ) * 64 );
     board_makeMove( board, move );
     bool leadsToCheck = false;
     uint64_t moves;
@@ -475,7 +477,10 @@ bool board_moveLeadsToCheck( Board *board, Move *move ) {
             break;
         }
     }
-    board_undoMove( board );
+    //board_undoMove( board );
+    memcpy( board->pieceMap, lastPieceMap, sizeof( Piece ) * 64 );
+    board_updateBitFieldsFromPieces( board );
+    board->whiteToMove = !board->whiteToMove;
     return leadsToCheck;
 }
 
