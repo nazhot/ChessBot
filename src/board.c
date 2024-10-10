@@ -275,6 +275,9 @@ static void board_printMove( Move *move ) {
     } else if ( move->moveType == MOVE_PROMOTION ) {
         printf( " (%c)", pieceSymbols[move->promotionType] );
     }
+    if ( move->leadsToCheck ) {
+        printf( " (Check)" );
+    }
     printf( "\n" );
 }
 
@@ -336,6 +339,7 @@ static void board_undoMove( Board *board ) {
     } else if ( lastMove.leadsToCheckMate ) {
         board->gameOver = false;
     }
+    board->whiteToMove = !board->whiteToMove;
 
     board_updateBitFieldsFromPieces( board );
 }
@@ -538,7 +542,6 @@ Move* board_getMovesForCurrentSide( Board *board, uint *numMoves ) {
                 moveArray[*numMoves].srcCol = col;
                 moveArray[*numMoves].dstRow = i / 8;
                 moveArray[*numMoves].dstCol = i % 8;
-                moveArray[*numMoves].leadsToCheck = board_moveLeadsToCheck( board, &moveArray[*numMoves] );
 
                 if ( captures >> ( 63 - i ) & 1  ) {
                     moveArray[*numMoves].moveType = MOVE_CAPTURE;
@@ -548,8 +551,8 @@ Move* board_getMovesForCurrentSide( Board *board, uint *numMoves ) {
                         moveArray[*numMoves].captureType = CAPTURE_EN_PASSANT;
                         moveArray[*numMoves].pieceCaptured = PAWN;
                     }
-                    moveArray[*numMoves].leadsToCheck = board_moveLeadsToCheck( board, &moveArray[*numMoves] );
                 }
+                moveArray[*numMoves].leadsToCheck = board_moveLeadsToCheck( board, &moveArray[*numMoves] );
 
                 //board_printMove( &moveArray[*numMoves] );
 
