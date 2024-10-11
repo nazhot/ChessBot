@@ -101,15 +101,13 @@ typedef struct Board {
  * @return newly created Board
  */
 Board* board_initialize();
-void board_clear( Board *board );
-void board_getMovesForSide( Board *board, bool whiteToMove, Move *moveArray, 
-                            uint moveArraySize );
-Move* board_getMovesForCurrentSide( Board *board, uint *numMoves );
-Move* board_getMovesForOppositeSide( Board *board, uint *numMoves );
-void board_makeMove( Board *board, Move *move );
-void board_print( Board *board );
+void board_clear( Board* const board );
+Move* board_getMovesForCurrentSide( Board* const board, uint* const numMoves );
+Move* board_getMovesForOppositeSide( Board* const board, uint* const numMoves );
+void board_makeMove( Board* const board, const Move* const move );
+void board_print( const Board* const board );
 void board_decideAndMakeMove( Board *board );
-void board_printBitField( char bitField, char *text );
-void board_playGame( Board *board );
+void board_printBitField( const char bitField, const char *text );
+void board_playGame( Board* const board );
 
 #endif

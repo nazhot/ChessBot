@@ -9,24 +9,24 @@
 
 static void board_updateBitFieldsFromPieces( Board *board );
 
-void board_printBitField( char bitField, char *text ) {
+void board_printBitField( const char bitField, const char *text ) {
     printf( "%s: ", text );
     for ( uint i = 0; i < 8; ++i ) {
         printf( "%i", bitField >> ( 7 - i ) & 1 ? 1 : 0 );
     }
 }
 
-static Piece initializePiece( PieceType type, bool isWhite ) {
+static Piece initializePiece( const PieceType type, const bool isWhite ) {
     return ( Piece ) { .type = type,
                        .numMoves = 0,
                        .isWhite = isWhite };
 }
 
-static void board_resetBitFields( Board *board ) {
+static void board_resetBitFields( Board* const board ) {
     memset( &board->bitFields, 0, sizeof( board->bitFields ) );
 }
 
-static void board_printUint64_t( uint64_t num ) {
+static void board_printUint64_t( const uint64_t num ) {
     for ( int i = 63; i >= 0; --i ) {
         printf( "%i", num >> i & 1 ? 1 : 0 );
     }
@@ -83,7 +83,7 @@ Board* board_initialize() {
     return board;
 }
 
-void board_clear( Board *board ) {
+void board_clear( Board* const board ) {
     for ( uint i = 0; i < 8; ++i ) {
         for ( uint j = 0; j < 8; ++j ) {
             board->pieceMap[i][j].type = NONE;
@@ -92,20 +92,15 @@ void board_clear( Board *board ) {
     board_updateBitFieldsFromPieces( board );
 }
 
-void board_getMovesForSide( Board *board, bool whiteToMove, Move *moveArray, 
-                            uint moveArraySize ) {
-
-}
-
-static void board_set8BitFieldIndex( unsigned char *bitField, uint index ) {
+static void board_set8BitFieldIndex( unsigned char* const bitField, const uint index ) {
     *bitField ^= ( 1 << ( 7 - index ) );
 }
 
-static void board_set64BitFieldIndex( uint64_t *bitField, uint index ) {
+static void board_set64BitFieldIndex( uint64_t* const bitField, const uint index ) {
     *bitField ^= ( ( ( uint64_t ) 1 ) << ( 63 - index ) );
 }
 
-static void board_updateBitFieldsFromPieces( Board *board ) {
+static void board_updateBitFieldsFromPieces( Board* const board ) {
     board_resetBitFields( board );
     for ( uint i = 0; i < 64; ++i ) {
         IndexTranslation *indexes = lookup_translateIndex( i );
@@ -157,7 +152,7 @@ static void board_updateBitFieldsFromPieces( Board *board ) {
     }
 }
 
-void board_makeMove( Board *board, Move *move ) {
+void board_makeMove( Board* const board, const Move* const move ) {
     ++board->pieceMap[move->srcRow][move->srcCol].numMoves;
     memcpy( &board->pieceMap[move->dstRow][move->dstCol],
             &board->pieceMap[move->srcRow][move->srcCol], sizeof( Piece ) );
@@ -213,7 +208,7 @@ void board_makeMove( Board *board, Move *move ) {
     board->whiteToMove = !board->whiteToMove;
 }
 
-void board_print( Board *board ) {
+void board_print( const Board* const board ) {
     static char pieceSymbols[] = { [NONE] = ' ', [PAWN] = 'P', [KNIGHT] = 'N', 
                                    [BISHOP] = 'B', [ROOK] = 'R', [QUEEN] = 'Q',
                                    [KING] = 'K' };
@@ -231,15 +226,15 @@ void board_print( Board *board ) {
     }
 }
 
-static void board_getCapturesFromMoves( Board *board, uint64_t *captures, 
-                                        uint64_t *moves, bool isWhite ) {
+static void board_getCapturesFromMoves( const Board* const board, uint64_t* const captures, 
+                                        uint64_t* const moves, const bool isWhite ) {
     uint64_t opponentPieceBitMap = isWhite ? board->bitFields.blkBoard : board->bitFields.whtBoard;
     uint64_t friendlyPieceBitMap = isWhite ? board->bitFields.whtBoard : board->bitFields.blkBoard;
     *captures = *moves & opponentPieceBitMap; //bits are set on the squares where captures occur
     *moves = ( *moves ^ friendlyPieceBitMap ) & *moves; 
 }
 
-void board_printAlgebraicMoves( uint64_t moves ) {
+static void board_printAlgebraicMoves( const uint64_t moves ) {
     printf( "(" );
     bool firstMove = true;
     for ( uint row = 0; row < 8; ++row ) {
@@ -257,11 +252,11 @@ void board_printAlgebraicMoves( uint64_t moves ) {
     printf( ")" );
 }
 
-static void board_printAlgrebraicFromRowCol( uint row, uint col ) {
+static void board_printAlgrebraicFromRowCol( const uint row, const uint col ) {
     printf( "%c%u", col + 97, 8 - row );
 }
 
-static void board_printMove( Move *move ) {
+static void board_printMove( const Move* const move ) {
     static char pieceSymbols[] = { [NONE] = ' ', [PAWN] = 'P', [KNIGHT] = 'N', 
                                    [BISHOP] = 'B', [ROOK] = 'R', [QUEEN] = 'Q',
                                    [KING] = 'K' };
@@ -287,7 +282,7 @@ static void board_printMove( Move *move ) {
     printf( "\n" );
 }
 
-static void board_undoMove( Board *board ) {
+static void board_undoMove( Board* const board ) {
     if ( board->numPastMoves == 0 ){
         return;
     }
@@ -352,7 +347,8 @@ static void board_undoMove( Board *board ) {
 
 //currently does not check for if the pawn is at the end of the board, the pawn should
 //be promoted, hence there should never be a pawn checking for moves at the end of the board
-static void board_addPawnCaptures( Board *board, uint64_t *captures, uint64_t *moves, uint row, uint col ) {
+static void board_addPawnCaptures( Board* const board, uint64_t* const captures,
+                                   uint64_t* const moves, const uint row, const uint col ) {
     //diagonal captures
     uint index = row * 8 + col;
     bool isWhite = board->pieceMap[row][col].isWhite;
@@ -387,7 +383,7 @@ static void board_addPawnCaptures( Board *board, uint64_t *captures, uint64_t *m
     }
 }
 
-static bool board_checkCastle( Board *board, MoveDirection direction ) {
+static bool board_checkCastle( Board* const board, const MoveDirection direction ) {
     bool isWhite = board->whiteToMove;
     uint checkRow = isWhite ? 7 : 0;
     uint rookCheckCol = direction == DIRECTION_LEFT ? 0 : 7;
@@ -406,7 +402,8 @@ static bool board_checkCastle( Board *board, MoveDirection direction ) {
                board->pieceMap[checkRow][blockCheckCol3].type == NONE ) );
 }
 
-uint64_t board_getMoveBitFieldForPiece( Board *board, uint row, uint col ) {
+static uint64_t board_getMoveBitFieldForPiece( Board* const board, const uint row,
+                                               const uint col ) {
     if ( board->pieceMap[row][col].type == NONE ) {
         return 0;
     }
@@ -414,22 +411,22 @@ uint64_t board_getMoveBitFieldForPiece( Board *board, uint row, uint col ) {
     switch( board->pieceMap[row][col].type ) {
         case NONE:
         case PAWN:
-            return getPawnMoves( board, row, col );
+            return lookup_getPawnMoves( board, row, col );
         case KNIGHT:
-            return getKnightMoves( row, col );
+            return lookup_getKnightMoves( row, col );
         case QUEEN:
-            return getQueenMoves( board, row, col );
+            return lookup_getQueenMoves( board, row, col );
         case BISHOP:
-            return getBishopMoves( board, row, col );
+            return lookup_getBishopMoves( board, row, col );
         case KING:
-            return getKingMoves( row, col );
+            return lookup_getKingMoves( row, col );
         case ROOK:
-            return getRookMoves( board, row, col );
+            return lookup_getRookMoves( board, row, col );
     }
     return 0;
 }
 
-bool board_moveLeadsToCheck( Board *board, Move *move ) {
+bool board_moveLeadsToCheck( Board* const board, const Move* const move ) {
     Piece lastPieceMap[8][8] = {0};
     memcpy( lastPieceMap, board->pieceMap, sizeof( Piece ) * 64 );
     board_makeMove( board, move );
@@ -456,17 +453,17 @@ bool board_moveLeadsToCheck( Board *board, Move *move ) {
                      position->col != kingPosition.col ) {
                     break;
                 }
-                moves = getRookMoves( board, position->row, position->col );  
+                moves = lookup_getRookMoves( board, position->row, position->col );  
                 break;
             case KNIGHT:
-                moves = getKnightMoves( position->row, position->col );
+                moves = lookup_getKnightMoves( position->row, position->col );
                 break;
             case BISHOP:
                 if ( position->diaUpRight != kingPosition.diaUpRight &&
                      position->diaDownRight != kingPosition.diaDownRight ) {
                     break;
                 }
-                moves = getBishopMoves( board, position->row, position->col );  
+                moves = lookup_getBishopMoves( board, position->row, position->col );  
                 break;
             case QUEEN:
                 if ( position->row != kingPosition.row &&
@@ -475,7 +472,7 @@ bool board_moveLeadsToCheck( Board *board, Move *move ) {
                      position->diaDownRight != kingPosition.diaDownRight ) {
                     break;
                 }
-                moves = getQueenMoves( board, position->row, position->col );  
+                moves = lookup_getQueenMoves( board, position->row, position->col );  
                 break;
         }
         leadsToCheck = ( moves >> ( 63 - kingPosition.index ) & 1 );
@@ -490,7 +487,7 @@ bool board_moveLeadsToCheck( Board *board, Move *move ) {
     return leadsToCheck;
 }
 
-Move* board_getMovesForCurrentSide( Board *board, uint *numMoves ) {
+Move* board_getMovesForCurrentSide( Board* const board, uint* const numMoves ) {
     uint moveArraySize = 32;
     Move *moveArray = malloc( moveArraySize * sizeof( Move ) ); 
     *numMoves = 0;
@@ -607,7 +604,7 @@ Move* board_getMovesForCurrentSide( Board *board, uint *numMoves ) {
     return moveArray;
 }
 
-Move* board_getMovesForOppositeSide( Board *board, uint *numMoves ) {
+Move* board_getMovesForOppositeSide( Board* const board, uint* const numMoves ) {
     board->whiteToMove = !board->whiteToMove;
     Move *moveArray = board_getMovesForCurrentSide( board, numMoves );
     board->whiteToMove = !board->whiteToMove;
@@ -634,7 +631,7 @@ static int randomIndex( const uint size ) {
     return r % size;
 }
 
-void board_decideAndMakeMove( Board *board ) {
+void board_decideAndMakeMove( Board* const board ) {
     //get all of the moves of the currently moving side
     //do whatever algorithm to determine which move to do
     //make the move
@@ -662,7 +659,7 @@ void board_decideAndMakeMove( Board *board ) {
     }
 }
 
-void board_playGame( Board *board ) {
+void board_playGame( Board* const board ) {
     uint numMoves;
     Move *moves;
     while ( true ) {
