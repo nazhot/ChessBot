@@ -118,7 +118,7 @@ typedef struct ChessGame {
  */
 Board* board_initialize();
 void board_clear( Board* const board );
-Move* board_getMovesForCurrentSide( Board* const board, uint* const numMoves );
+Move* board_getMovesForCurrentSide( Board* const board, uint* const numMoves, bool checkForCheck );
 Move* board_getMovesForOppositeSide( Board* const board, uint* const numMoves );
 void board_makeMove( Board* const board, const Move* const move );
 void board_print( const Board* const board );

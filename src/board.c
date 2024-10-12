@@ -274,7 +274,7 @@ static void board_printMove( const Move* const move ) {
     } else if ( move->checkType == CHECKMATE ) {
         printf( " (Checkmate)" );
     } else if ( move->checkType == STALEMATE ) {
-        printf( " (Stalemate" );
+        printf( " (Stalemate)" );
     }
     printf( "\n" );
 }
@@ -473,7 +473,11 @@ static bool board_oppositeKingPressured( Board* const board ) {
 //  -if it does, return CHECK_AGAINST_ME, automatic failure
 //-check if move leads to opponent being in check
 //  -if it does, set return value to CHECK_FOR_ME, move on to check/stale mate check
-static CheckType board_moveLeadsToCheck( Board* const board, const Move* const move ) {
+static CheckType board_moveLeadsToCheck( Board* const board, const Move* const move,
+                                         bool checkForCheck ) {
+    if ( !checkForCheck ) {
+        return NO_CHECK;
+    }
     CheckType checkType = NO_CHECK;
     Piece lastPieceMap[8][8] = {0};
     memcpy( lastPieceMap, board->pieceMap, sizeof( Piece ) * 64 );
@@ -489,35 +493,37 @@ static CheckType board_moveLeadsToCheck( Board* const board, const Move* const m
     board->whiteToMove = !board->whiteToMove; //opposite move
 
     uint numMoves = 0;
-    Move *nextMoves = board_getMovesForCurrentSide( board, &numMoves );
+    Move *nextMoves = board_getMovesForCurrentSide( board, &numMoves, false );
     Piece tempPieceMap[8][8] = {0};
     memcpy( tempPieceMap, board->pieceMap, sizeof( Piece ) * 64 );
     bool hasValidMove = false;
     for ( uint i = 0; i < numMoves; ++i ) {
         board_makeMove( board, &nextMoves[i] ) ;
         //current turn is what it was in the beginning of the function
-        hasValidMove = board_oppositeKingPressured( board ); 
+        hasValidMove = !board_oppositeKingPressured( board ); 
         memcpy( board->pieceMap, tempPieceMap, sizeof( Piece ) * 64 );
         --board->numPastMoves;
         board_updateBitFieldsFromPieces( board );
+        board->whiteToMove = !board->whiteToMove;
 
         if ( hasValidMove ) {
-            return checkType;
+            break;
         }
-        board->whiteToMove = !board->whiteToMove;
     }
 
-    checkType = checkType == CHECK_FOR_ME ? CHECKMATE : STALEMATE;
     free( nextMoves );
 
     memcpy( board->pieceMap, lastPieceMap, sizeof( Piece ) * 64 );
     --board->numPastMoves;
     board_updateBitFieldsFromPieces( board );
     board->whiteToMove = !board->whiteToMove;
+    if ( !hasValidMove ) {
+        checkType = checkType == CHECK_FOR_ME ? CHECKMATE : STALEMATE;
+    }
     return checkType;
 }
 
-Move* board_getMovesForCurrentSide( Board* const board, uint* const numMoves ) {
+Move* board_getMovesForCurrentSide( Board* const board, uint* const numMoves, bool checkForCheck ) {
     uint moveArraySize = 32;
     Move *moveArray = malloc( moveArraySize * sizeof( Move ) ); 
     *numMoves = 0;
@@ -563,7 +569,7 @@ Move* board_getMovesForCurrentSide( Board* const board, uint* const numMoves ) {
                     temporaryMove.moveType = MOVE_PROMOTION;
                     for ( uint promotionPiece = KNIGHT; promotionPiece <= QUEEN; ++promotionPiece ) {
                         temporaryMove.promotionType = promotionPiece;
-                        CheckType checkType = board_moveLeadsToCheck( board, &temporaryMove );
+                        CheckType checkType = board_moveLeadsToCheck( board, &temporaryMove, checkForCheck );
                         if ( checkType == CHECK_AGAINST_ME ) {
                             continue; //invalid move
                         }
@@ -588,7 +594,7 @@ Move* board_getMovesForCurrentSide( Board* const board, uint* const numMoves ) {
                     }
                 }
 
-                CheckType checkType = board_moveLeadsToCheck( board, &temporaryMove );
+                CheckType checkType = board_moveLeadsToCheck( board, &temporaryMove, checkForCheck );
                 if ( checkType == CHECK_AGAINST_ME ) {
                     continue; //invalid move
                 }
@@ -616,7 +622,7 @@ Move* board_getMovesForCurrentSide( Board* const board, uint* const numMoves ) {
         temporaryMove.castleDirection = DIRECTION_LEFT;
         temporaryMove.dstCol = 2;
 
-        CheckType checkType = board_moveLeadsToCheck( board, &temporaryMove );
+        CheckType checkType = board_moveLeadsToCheck( board, &temporaryMove, checkForCheck );
 
         if ( checkType !=  CHECK_AGAINST_ME ) {
             temporaryMove.checkType = checkType;
@@ -633,7 +639,7 @@ Move* board_getMovesForCurrentSide( Board* const board, uint* const numMoves ) {
         temporaryMove.castleDirection = DIRECTION_RIGHT;
         temporaryMove.dstCol = 6;
 
-        CheckType checkType = board_moveLeadsToCheck( board, &temporaryMove );
+        CheckType checkType = board_moveLeadsToCheck( board, &temporaryMove, checkForCheck );
 
         if ( checkType !=  CHECK_AGAINST_ME ) {
             temporaryMove.checkType = checkType;
@@ -651,7 +657,7 @@ Move* board_getMovesForCurrentSide( Board* const board, uint* const numMoves ) {
 
 Move* board_getMovesForOppositeSide( Board* const board, uint* const numMoves ) {
     board->whiteToMove = !board->whiteToMove;
-    Move *moveArray = board_getMovesForCurrentSide( board, numMoves );
+    Move *moveArray = board_getMovesForCurrentSide( board, numMoves, true );
     board->whiteToMove = !board->whiteToMove;
     return moveArray;
 }
@@ -695,7 +701,7 @@ void board_decideAndMakeMove( Board* const board ) {
     int random;
     for ( uint i = 0; i < 30; ++i ) {
         numMoves = 0;
-        moves = board_getMovesForCurrentSide( board, &numMoves );
+        moves = board_getMovesForCurrentSide( board, &numMoves, true );
         random = randomIndex( numMoves );
         board_makeMove( board, &moves[random] );
         board_printMove( &moves[random] );
@@ -711,7 +717,7 @@ void board_playGame( Board* const board ) {
         numMoves = 0;
         board_print( board );
         printf( "%s turn:\n", board->whiteToMove ? "White's" : "Black's" );
-        moves = board_getMovesForCurrentSide( board, &numMoves );
+        moves = board_getMovesForCurrentSide( board, &numMoves, true );
         for ( uint i = 0; i < numMoves; ++i ) {
             printf( "%u: ", i );
             board_printMove( &moves[i] );
