@@ -522,6 +522,7 @@ Move* board_getMovesForCurrentSide( Board* const board, uint* const numMoves ) {
     Move *moveArray = malloc( moveArraySize * sizeof( Move ) ); 
     *numMoves = 0;
     uint64_t moves, captures;
+    Move temporaryMove = {0};
     for ( uint row = 0; row < 8; ++row ) {
         for ( uint col = 0; col < 8; ++col ) {
             captures = 0;
@@ -547,93 +548,104 @@ Move* board_getMovesForCurrentSide( Board* const board, uint* const numMoves ) {
                         continue;
                     }
                 }
-                if ( *numMoves == moveArraySize ) {
-                    moveArraySize *= 2;
-                    moveArray = realloc( moveArray, moveArraySize * sizeof( Move ) );
-                }
+
+                temporaryMove.moveType = MOVE_NORMAL;
+                temporaryMove.whiteMove = board->pieceMap[row][col].isWhite;
+                temporaryMove.pieceType = board->pieceMap[row][col].type;
+                temporaryMove.srcRow = row;
+                temporaryMove.srcCol = col;
+                temporaryMove.dstRow = i / 8;
+                temporaryMove.dstCol = i % 8;
 
                 //check for promotion
                 if ( i / 8 == ( board->whiteToMove ? 0 : 7 ) &&
                      ( board->pieceMap[row][col].type == PAWN ) ) {
+                    temporaryMove.moveType = MOVE_PROMOTION;
                     for ( uint promotionPiece = KNIGHT; promotionPiece <= QUEEN; ++promotionPiece ) {
+                        temporaryMove.promotionType = promotionPiece;
+                        if ( board_moveLeadsToCheck( board, &temporaryMove,
+                                                     CHECK_AGAINST_ME ) ) {
+                            continue; //move would lead to current player's king being taken
+                        }
+                        temporaryMove.leadsToCheck = board_moveLeadsToCheck( board, &temporaryMove,
+                                                                                    CHECK_FOR_ME );
                         if ( *numMoves == moveArraySize ) {
                             moveArraySize *= 2;
                             moveArray = realloc( moveArray, moveArraySize * sizeof( Move ) );
                         }
-                        moveArray[*numMoves].moveType = MOVE_PROMOTION;
-                        moveArray[*numMoves].promotionType = promotionPiece;
-                        moveArray[*numMoves].whiteMove = board->pieceMap[row][col].isWhite;
-                        moveArray[*numMoves].pieceType = PAWN;
-                        moveArray[*numMoves].srcRow = row;
-                        moveArray[*numMoves].srcCol = col;
-                        moveArray[*numMoves].dstRow = i / 8;
-                        moveArray[*numMoves].dstCol = i % 8;
-                        moveArray[*numMoves].leadsToCheck = board_moveLeadsToCheck( board, &moveArray[*numMoves],
-                                                                                    CHECK_FOR_ME );
+                        memcpy( &moveArray[*numMoves], &temporaryMove, sizeof( Move ) );
                         ++*numMoves;
                     }
                     continue;
                 }
-                moveArray[*numMoves].moveType = MOVE_NORMAL;
-                moveArray[*numMoves].whiteMove = board->pieceMap[row][col].isWhite;
-                moveArray[*numMoves].pieceType = board->pieceMap[row][col].type;
-                moveArray[*numMoves].srcRow = row;
-                moveArray[*numMoves].srcCol = col;
-                moveArray[*numMoves].dstRow = i / 8;
-                moveArray[*numMoves].dstCol = i % 8;
 
                 if ( captures >> ( 63 - i ) & 1  ) {
-                    moveArray[*numMoves].moveType = MOVE_CAPTURE;
-                    moveArray[*numMoves].captureType = CAPTURE_NORMAL; //TODO: update to actually check for capture type
-                    moveArray[*numMoves].pieceCaptured = board->pieceMap[i / 8][i % 8].type;
+                    temporaryMove.moveType = MOVE_CAPTURE;
+                    temporaryMove.captureType = CAPTURE_NORMAL; //TODO: update to actually check for capture type
+                    temporaryMove.pieceCaptured = board->pieceMap[i / 8][i % 8].type;
                     if ( enPassant ) {
-                        moveArray[*numMoves].captureType = CAPTURE_EN_PASSANT;
-                        moveArray[*numMoves].pieceCaptured = PAWN;
+                        temporaryMove.captureType = CAPTURE_EN_PASSANT;
+                        temporaryMove.pieceCaptured = PAWN;
                     }
                 }
-                moveArray[*numMoves].leadsToCheck = board_moveLeadsToCheck( board, &moveArray[*numMoves],
+
+                if ( board_moveLeadsToCheck( board, &temporaryMove,
+                                             CHECK_AGAINST_ME ) ) {
+                    continue;
+                }
+
+                temporaryMove.leadsToCheck = board_moveLeadsToCheck( board, &temporaryMove,
                                                                             CHECK_FOR_ME );
-
-                //board_printMove( &moveArray[*numMoves] );
-
+                if ( *numMoves == moveArraySize ) {
+                    moveArraySize *= 2;
+                    moveArray = realloc( moveArray, moveArraySize * sizeof( Move ) );
+                }
+                memcpy( &moveArray[*numMoves], &temporaryMove, sizeof( Move ) );
                 ++*numMoves;
             }
             //printMoves( moves, row * 8 + col, symbol );
         }
     }
+
+    temporaryMove.moveType = MOVE_CASTLE;
+    temporaryMove.pieceType = KING;
+    temporaryMove.srcRow = board->whiteToMove ? 7 : 0;
+    temporaryMove.srcCol = 4; //king col
+    temporaryMove.dstRow = board->whiteToMove ? 7 : 0;
+
     if ( board_checkCastle( board, DIRECTION_LEFT ) ) {
-        if ( *numMoves == moveArraySize ) {
-            moveArraySize *= 2;
-            moveArray = realloc( moveArray, moveArraySize * sizeof( Move ) );
+        temporaryMove.castleDirection = DIRECTION_LEFT;
+        temporaryMove.dstCol = 2;
+
+        if ( !board_moveLeadsToCheck( board, &temporaryMove,
+                                     CHECK_AGAINST_ME ) ) {
+            temporaryMove.leadsToCheck = board_moveLeadsToCheck( board, &temporaryMove,
+                                                                        CHECK_FOR_ME );
+            if ( *numMoves == moveArraySize ) {
+                moveArraySize += 2;
+                moveArray = realloc( moveArray, moveArraySize * sizeof( Move ) );
+            }
+            memcpy( &moveArray[*numMoves], &temporaryMove, sizeof( Move ) );
+            ++*numMoves;
         }
-        moveArray[*numMoves].moveType = MOVE_CASTLE;
-        moveArray[*numMoves].pieceType = KING;
-        moveArray[*numMoves].castleDirection = DIRECTION_LEFT;
-        moveArray[*numMoves].srcRow = board->whiteToMove ? 7 : 0;
-        moveArray[*numMoves].srcCol = 4; //king col
-        moveArray[*numMoves].dstRow = board->whiteToMove ? 7 : 0;
-        moveArray[*numMoves].dstCol = 2;
-        moveArray[*numMoves].leadsToCheck = board_moveLeadsToCheck( board, &moveArray[*numMoves],
-                                                                    CHECK_FOR_ME );
-        ++*numMoves;
+
         
     }
     if ( board_checkCastle( board, DIRECTION_RIGHT ) ) {
-        if ( *numMoves == moveArraySize ) {
-            moveArraySize *= 2;
-            moveArray = realloc( moveArray, moveArraySize * sizeof( Move ) );
+        temporaryMove.castleDirection = DIRECTION_RIGHT;
+        temporaryMove.dstCol = 6;
+
+        if ( !board_moveLeadsToCheck( board, &temporaryMove,
+                                     CHECK_AGAINST_ME ) ) {
+            temporaryMove.leadsToCheck = board_moveLeadsToCheck( board, &temporaryMove,
+                                                                        CHECK_FOR_ME );
+            if ( *numMoves == moveArraySize ) {
+                ++moveArraySize;
+                moveArray = realloc( moveArray, moveArraySize * sizeof( Move ) );
+            }
+            memcpy( &moveArray[*numMoves], &temporaryMove, sizeof( Move ) );
+            ++*numMoves;
         }
-        moveArray[*numMoves].moveType = MOVE_CASTLE;
-        moveArray[*numMoves].pieceType = KING;
-        moveArray[*numMoves].castleDirection = DIRECTION_RIGHT;
-        moveArray[*numMoves].srcRow = board->whiteToMove ? 7 : 0;
-        moveArray[*numMoves].srcCol = 4; //king col
-        moveArray[*numMoves].dstRow = board->whiteToMove ? 7 : 0;
-        moveArray[*numMoves].dstCol = 6;
-        moveArray[*numMoves].leadsToCheck = board_moveLeadsToCheck( board, &moveArray[*numMoves],
-                                                                    CHECK_FOR_ME );
-        ++*numMoves;
-        
     }
     return moveArray;
 }
