@@ -426,18 +426,15 @@ static uint64_t board_getMoveBitFieldForPiece( Board* const board, const uint ro
     return 0;
 }
 
-bool board_moveLeadsToCheck( Board* const board, const Move* const move ) {
-    Piece lastPieceMap[8][8] = {0};
-    memcpy( lastPieceMap, board->pieceMap, sizeof( Piece ) * 64 );
-    board_makeMove( board, move );
+static bool board_oppositeKingPressured( Board* const board ) {
     bool leadsToCheck = false;
     uint64_t moves;
-    IndexTranslation kingPosition = move->whiteMove ? board->blackKing : board->whiteKing;
+    IndexTranslation kingPosition = board->whiteToMove ? board->blackKing : board->whiteKing;
     for ( uint index = 0; index < 64; ++index ) {
         IndexTranslation *position = lookup_translateIndex( index );
         Piece piece = board->pieceMap[position->row][position->col];
-        if ( ( piece.isWhite && !move->whiteMove ) ||
-             ( !piece.isWhite && move->whiteMove ) ) {
+        if ( ( piece.isWhite && !board->whiteToMove ) ||
+             ( !piece.isWhite && board->whiteToMove ) ) {
             continue;
         }
         moves = 0;
@@ -446,7 +443,7 @@ bool board_moveLeadsToCheck( Board* const board, const Move* const move ) {
             case KING:
                 break;
             case PAWN:
-                moves = lookup_getPawnCaptures( index, move->whiteMove );
+                moves = lookup_getPawnCaptures( index, board->whiteToMove );
                 break;
             case ROOK:
                 if ( position->row != kingPosition.row &&
@@ -480,6 +477,14 @@ bool board_moveLeadsToCheck( Board* const board, const Move* const move ) {
             break;
         }
     }
+    return leadsToCheck;
+}
+
+static bool board_moveLeadsToCheck( Board* const board, const Move* const move ) {
+    Piece lastPieceMap[8][8] = {0};
+    memcpy( lastPieceMap, board->pieceMap, sizeof( Piece ) * 64 );
+    board_makeMove( board, move );
+    bool leadsToCheck = board_oppositeKingPressured( board );
     //board_undoMove( board );
     memcpy( board->pieceMap, lastPieceMap, sizeof( Piece ) * 64 );
     board_updateBitFieldsFromPieces( board );
