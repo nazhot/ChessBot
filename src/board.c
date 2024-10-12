@@ -480,7 +480,31 @@ static bool board_oppositeKingPressured( Board* const board ) {
     return leadsToCheck;
 }
 
-static bool board_moveLeadsToCheck( Board* const board, const Move* const move ) {
+typedef enum Check_Check {
+    CHECK_AGAINST_ME,
+    CHECK_FOR_ME
+} Check_Check;
+
+static bool board_moveLeadsToCheck( Board* const board, const Move* const move,
+                                    Check_Check checkType ) {
+    Piece lastPieceMap[8][8] = {0};
+    memcpy( lastPieceMap, board->pieceMap, sizeof( Piece ) * 64 );
+    board_makeMove( board, move );
+    if ( checkType == CHECK_FOR_ME ) {
+        board->whiteToMove = !board->whiteToMove; //check if same color is pressuring king
+    }
+    bool leadsToCheck = board_oppositeKingPressured( board );
+    //board_undoMove( board );
+    memcpy( board->pieceMap, lastPieceMap, sizeof( Piece ) * 64 );
+    --board->numPastMoves;
+    if ( checkType == CHECK_AGAINST_ME ) {
+        board->whiteToMove = !board->whiteToMove;
+    }
+    board_updateBitFieldsFromPieces( board );
+    return leadsToCheck;
+}
+
+static bool board_moveInvalidDueToCheck( Board* const board, const Move* const move ) {
     Piece lastPieceMap[8][8] = {0};
     memcpy( lastPieceMap, board->pieceMap, sizeof( Piece ) * 64 );
     board_makeMove( board, move );
@@ -544,7 +568,8 @@ Move* board_getMovesForCurrentSide( Board* const board, uint* const numMoves ) {
                         moveArray[*numMoves].srcCol = col;
                         moveArray[*numMoves].dstRow = i / 8;
                         moveArray[*numMoves].dstCol = i % 8;
-                        moveArray[*numMoves].leadsToCheck = board_moveLeadsToCheck( board, &moveArray[*numMoves] );
+                        moveArray[*numMoves].leadsToCheck = board_moveLeadsToCheck( board, &moveArray[*numMoves],
+                                                                                    CHECK_FOR_ME );
                         ++*numMoves;
                     }
                     continue;
@@ -566,7 +591,8 @@ Move* board_getMovesForCurrentSide( Board* const board, uint* const numMoves ) {
                         moveArray[*numMoves].pieceCaptured = PAWN;
                     }
                 }
-                moveArray[*numMoves].leadsToCheck = board_moveLeadsToCheck( board, &moveArray[*numMoves] );
+                moveArray[*numMoves].leadsToCheck = board_moveLeadsToCheck( board, &moveArray[*numMoves],
+                                                                            CHECK_FOR_ME );
 
                 //board_printMove( &moveArray[*numMoves] );
 
@@ -587,7 +613,8 @@ Move* board_getMovesForCurrentSide( Board* const board, uint* const numMoves ) {
         moveArray[*numMoves].srcCol = 4; //king col
         moveArray[*numMoves].dstRow = board->whiteToMove ? 7 : 0;
         moveArray[*numMoves].dstCol = 2;
-        moveArray[*numMoves].leadsToCheck = board_moveLeadsToCheck( board, &moveArray[*numMoves] );
+        moveArray[*numMoves].leadsToCheck = board_moveLeadsToCheck( board, &moveArray[*numMoves],
+                                                                    CHECK_FOR_ME );
         ++*numMoves;
         
     }
@@ -603,7 +630,8 @@ Move* board_getMovesForCurrentSide( Board* const board, uint* const numMoves ) {
         moveArray[*numMoves].srcCol = 4; //king col
         moveArray[*numMoves].dstRow = board->whiteToMove ? 7 : 0;
         moveArray[*numMoves].dstCol = 6;
-        moveArray[*numMoves].leadsToCheck = board_moveLeadsToCheck( board, &moveArray[*numMoves] );
+        moveArray[*numMoves].leadsToCheck = board_moveLeadsToCheck( board, &moveArray[*numMoves],
+                                                                    CHECK_FOR_ME );
         ++*numMoves;
         
     }
