@@ -187,6 +187,12 @@ void board_makeMove( Board* const board, const Move* const move ) {
         }
     } else if ( move->leadsToCheckMate ) {
         board->gameOver = true;
+    } else {
+        if ( move->whiteMove ) {
+            board->blackInCheck = false;
+        } else {
+            board->whiteInCheck = false;
+        }
     }
     board_updateBitFieldsFromPieces( board );
     memcpy( &board->pastMoves[board->numPastMoves++], move, sizeof( Move ) );
