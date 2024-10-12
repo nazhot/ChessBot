@@ -487,6 +487,7 @@ static bool board_moveLeadsToCheck( Board* const board, const Move* const move )
     bool leadsToCheck = board_oppositeKingPressured( board );
     //board_undoMove( board );
     memcpy( board->pieceMap, lastPieceMap, sizeof( Piece ) * 64 );
+    --board->numPastMoves;
     board_updateBitFieldsFromPieces( board );
     board->whiteToMove = !board->whiteToMove;
     return leadsToCheck;
