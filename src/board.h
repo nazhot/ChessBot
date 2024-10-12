@@ -95,6 +95,14 @@ typedef struct Board {
     bool gameOver;
 } Board; 
 
+//contains an entire game, meant to remove the large array from the board
+//for when I start checking lots of moves in the future
+typedef struct ChessGame {
+    Board board;
+    uint numPastMoves;
+    Move pastMoves[512];
+} ChessGame;
+
 /**
  * Initialize board with the standard starting layout
  *
