@@ -6,6 +6,15 @@
 #include <stdbool.h>
 #include "pieces.h"
 
+
+typedef enum CheckType {
+    NO_CHECK,
+    CHECK_AGAINST_ME,
+    CHECK_FOR_ME,
+    CHECKMATE,
+    STALEMATE
+} CheckType;
+
 typedef struct IndexTranslation {
     uint index;
     uint row;
@@ -52,8 +61,7 @@ typedef struct Move {
     uint dstCol;
     uint srcRow;
     uint srcCol;
-    bool leadsToCheck;
-    bool leadsToCheckMate;
+    CheckType checkType;
 } Move;
 
 //Has all of the information about a board. The bitFields member contains all of

@@ -179,15 +179,17 @@ void board_makeMove( Board* const board, const Move* const move ) {
         default:
             break;
     }
-    if ( move->leadsToCheck ) {
+    if ( move->checkType == CHECK_FOR_ME ) {
         if ( move->whiteMove ) {
             board->blackInCheck = true;
         } else {
             board->whiteInCheck = true;
         }
-    } else if ( move->leadsToCheckMate ) {
+    } else if ( move->checkType == CHECKMATE ) {
         board->gameOver = true;
-    } else {
+    } else if ( move->checkType == STALEMATE ) {
+
+    }else {
         if ( move->whiteMove ) {
             board->blackInCheck = false;
         } else {
@@ -267,8 +269,12 @@ static void board_printMove( const Move* const move ) {
     } else if ( move->moveType == MOVE_PROMOTION ) {
         printf( " (%c)", pieceSymbols[move->promotionType] );
     }
-    if ( move->leadsToCheck ) {
+    if ( move->checkType == CHECK_FOR_ME ) {
         printf( " (Check)" );
+    } else if ( move->checkType == CHECKMATE ) {
+        printf( " (Checkmate)" );
+    } else if ( move->checkType == STALEMATE ) {
+        printf( " (Stalemate" );
     }
     printf( "\n" );
 }
@@ -322,15 +328,6 @@ static void board_undoMove( Board* const board ) {
             break;
     }
 
-    if ( lastMove.leadsToCheck ) {
-        if ( lastMove.whiteMove ) {
-           board->blackInCheck = false; 
-        } else {
-            board->whiteInCheck = false;
-        }
-    } else if ( lastMove.leadsToCheckMate ) {
-        board->gameOver = false;
-    }
     board->whiteToMove = !board->whiteToMove;
 
     board_updateBitFieldsFromPieces( board );
@@ -471,41 +468,53 @@ static bool board_oppositeKingPressured( Board* const board ) {
     return leadsToCheck;
 }
 
-typedef enum Check_Check {
-    CHECK_AGAINST_ME,
-    CHECK_FOR_ME
-} Check_Check;
-
-static bool board_moveLeadsToCheck( Board* const board, const Move* const move,
-                                    Check_Check checkType ) {
+//used when current playing is checking one of their possible moves. Order is:
+//-make sure the move won't lead to their own king being in check (invalid)
+//  -if it does, return CHECK_AGAINST_ME, automatic failure
+//-check if move leads to opponent being in check
+//  -if it does, set return value to CHECK_FOR_ME, move on to check/stale mate check
+static CheckType board_moveLeadsToCheck( Board* const board, const Move* const move ) {
+    CheckType checkType = NO_CHECK;
     Piece lastPieceMap[8][8] = {0};
     memcpy( lastPieceMap, board->pieceMap, sizeof( Piece ) * 64 );
-    board_makeMove( board, move );
-    if ( checkType == CHECK_FOR_ME ) {
-        board->whiteToMove = !board->whiteToMove; //check if same color is pressuring king
+    board_makeMove( board, move ); //opposite move
+    if (  board_oppositeKingPressured( board ) ) {
+        return CHECK_AGAINST_ME; //move invalid, return without further checks
     }
-    bool leadsToCheck = board_oppositeKingPressured( board );
-    //board_undoMove( board );
-    memcpy( board->pieceMap, lastPieceMap, sizeof( Piece ) * 64 );
-    --board->numPastMoves;
-    if ( checkType == CHECK_AGAINST_ME ) {
+
+    board->whiteToMove = !board->whiteToMove; //current move
+    if ( board_oppositeKingPressured( board ) ) {
+        checkType = CHECK_FOR_ME;
+    }
+    board->whiteToMove = !board->whiteToMove; //opposite move
+
+    uint numMoves = 0;
+    Move *nextMoves = board_getMovesForCurrentSide( board, &numMoves );
+    Piece tempPieceMap[8][8] = {0};
+    memcpy( tempPieceMap, board->pieceMap, sizeof( Piece ) * 64 );
+    bool hasValidMove = false;
+    for ( uint i = 0; i < numMoves; ++i ) {
+        board_makeMove( board, &nextMoves[i] ) ;
+        //current turn is what it was in the beginning of the function
+        hasValidMove = board_oppositeKingPressured( board ); 
+        memcpy( board->pieceMap, tempPieceMap, sizeof( Piece ) * 64 );
+        --board->numPastMoves;
+        board_updateBitFieldsFromPieces( board );
+
+        if ( hasValidMove ) {
+            return checkType;
+        }
         board->whiteToMove = !board->whiteToMove;
     }
-    board_updateBitFieldsFromPieces( board );
-    return leadsToCheck;
-}
 
-static bool board_moveInvalidDueToCheck( Board* const board, const Move* const move ) {
-    Piece lastPieceMap[8][8] = {0};
-    memcpy( lastPieceMap, board->pieceMap, sizeof( Piece ) * 64 );
-    board_makeMove( board, move );
-    bool leadsToCheck = board_oppositeKingPressured( board );
-    //board_undoMove( board );
+    checkType = checkType == CHECK_FOR_ME ? CHECKMATE : STALEMATE;
+    free( nextMoves );
+
     memcpy( board->pieceMap, lastPieceMap, sizeof( Piece ) * 64 );
     --board->numPastMoves;
     board_updateBitFieldsFromPieces( board );
     board->whiteToMove = !board->whiteToMove;
-    return leadsToCheck;
+    return checkType;
 }
 
 Move* board_getMovesForCurrentSide( Board* const board, uint* const numMoves ) {
@@ -554,12 +563,11 @@ Move* board_getMovesForCurrentSide( Board* const board, uint* const numMoves ) {
                     temporaryMove.moveType = MOVE_PROMOTION;
                     for ( uint promotionPiece = KNIGHT; promotionPiece <= QUEEN; ++promotionPiece ) {
                         temporaryMove.promotionType = promotionPiece;
-                        if ( board_moveLeadsToCheck( board, &temporaryMove,
-                                                     CHECK_AGAINST_ME ) ) {
-                            continue; //move would lead to current player's king being taken
+                        CheckType checkType = board_moveLeadsToCheck( board, &temporaryMove );
+                        if ( checkType == CHECK_AGAINST_ME ) {
+                            continue; //invalid move
                         }
-                        temporaryMove.leadsToCheck = board_moveLeadsToCheck( board, &temporaryMove,
-                                                                                    CHECK_FOR_ME );
+                        temporaryMove.checkType = checkType;
                         if ( *numMoves == moveArraySize ) {
                             moveArraySize *= 2;
                             moveArray = realloc( moveArray, moveArraySize * sizeof( Move ) );
@@ -580,13 +588,13 @@ Move* board_getMovesForCurrentSide( Board* const board, uint* const numMoves ) {
                     }
                 }
 
-                if ( board_moveLeadsToCheck( board, &temporaryMove,
-                                             CHECK_AGAINST_ME ) ) {
-                    continue;
+                CheckType checkType = board_moveLeadsToCheck( board, &temporaryMove );
+                if ( checkType == CHECK_AGAINST_ME ) {
+                    continue; //invalid move
                 }
 
-                temporaryMove.leadsToCheck = board_moveLeadsToCheck( board, &temporaryMove,
-                                                                            CHECK_FOR_ME );
+                temporaryMove.checkType = checkType;
+
                 if ( *numMoves == moveArraySize ) {
                     moveArraySize *= 2;
                     moveArray = realloc( moveArray, moveArraySize * sizeof( Move ) );
@@ -608,10 +616,11 @@ Move* board_getMovesForCurrentSide( Board* const board, uint* const numMoves ) {
         temporaryMove.castleDirection = DIRECTION_LEFT;
         temporaryMove.dstCol = 2;
 
-        if ( !board_moveLeadsToCheck( board, &temporaryMove,
-                                     CHECK_AGAINST_ME ) ) {
-            temporaryMove.leadsToCheck = board_moveLeadsToCheck( board, &temporaryMove,
-                                                                        CHECK_FOR_ME );
+        CheckType checkType = board_moveLeadsToCheck( board, &temporaryMove );
+
+        if ( checkType !=  CHECK_AGAINST_ME ) {
+            temporaryMove.checkType = checkType;
+
             if ( *numMoves == moveArraySize ) {
                 moveArraySize += 2;
                 moveArray = realloc( moveArray, moveArraySize * sizeof( Move ) );
@@ -619,19 +628,18 @@ Move* board_getMovesForCurrentSide( Board* const board, uint* const numMoves ) {
             memcpy( &moveArray[*numMoves], &temporaryMove, sizeof( Move ) );
             ++*numMoves;
         }
-
-        
     }
     if ( board_checkCastle( board, DIRECTION_RIGHT ) ) {
         temporaryMove.castleDirection = DIRECTION_RIGHT;
         temporaryMove.dstCol = 6;
 
-        if ( !board_moveLeadsToCheck( board, &temporaryMove,
-                                     CHECK_AGAINST_ME ) ) {
-            temporaryMove.leadsToCheck = board_moveLeadsToCheck( board, &temporaryMove,
-                                                                        CHECK_FOR_ME );
+        CheckType checkType = board_moveLeadsToCheck( board, &temporaryMove );
+
+        if ( checkType !=  CHECK_AGAINST_ME ) {
+            temporaryMove.checkType = checkType;
+
             if ( *numMoves == moveArraySize ) {
-                ++moveArraySize;
+                moveArraySize += 2;
                 moveArray = realloc( moveArray, moveArraySize * sizeof( Move ) );
             }
             memcpy( &moveArray[*numMoves], &temporaryMove, sizeof( Move ) );
