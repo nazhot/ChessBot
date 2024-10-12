@@ -115,40 +115,25 @@ static void board_updateBitFieldsFromPieces( Board* const board ) {
             continue;
         }
 
-        board_set64BitFieldIndex( &board->bitFields.allBoard, i );
         if ( piece.isWhite ) {
             board_set64BitFieldIndex( &board->bitFields.whtBoard, i );
-        } else {
-            board_set64BitFieldIndex( &board->bitFields.blkBoard, i );
-        }
-        
-        board_set8BitFieldIndex( &board->bitFields.allRows[indexes->row], indexes->col );
-        if ( piece.isWhite ) {
             board_set8BitFieldIndex( &board->bitFields.whtRows[indexes->row], indexes->col );
-        } else {
-            board_set8BitFieldIndex( &board->bitFields.blkRows[indexes->row], indexes->col );
-        }
-
-        board_set8BitFieldIndex( &board->bitFields.allCols[indexes->col], indexes->row );
-        if ( piece.isWhite ) {
             board_set8BitFieldIndex( &board->bitFields.whtCols[indexes->col], indexes->row );
-        } else {
-            board_set8BitFieldIndex( &board->bitFields.blkCols[indexes->col], indexes->row );
-        }
-
-        board_set8BitFieldIndex( &board->bitFields.allDiasUpRight[indexes->diaUpRight], indexes->diaUpRightIndex );
-        if ( piece.isWhite ) {
             board_set8BitFieldIndex( &board->bitFields.whtDiasUpRight[indexes->diaUpRight], indexes->diaUpRightIndex );
-        } else {
-            board_set8BitFieldIndex( &board->bitFields.blkDiasUpRight[indexes->diaUpRight], indexes->diaUpRightIndex );
-        }
-
-        board_set8BitFieldIndex( &board->bitFields.allDiasDownRight[indexes->diaDownRight], indexes->diaDownRightIndex );
-        if ( piece.isWhite ) {
             board_set8BitFieldIndex( &board->bitFields.whtDiasDownRight[indexes->diaDownRight], indexes->diaDownRightIndex );
         } else {
+            board_set64BitFieldIndex( &board->bitFields.blkBoard, i );
+            board_set8BitFieldIndex( &board->bitFields.blkRows[indexes->row], indexes->col );
+            board_set8BitFieldIndex( &board->bitFields.blkCols[indexes->col], indexes->row );
+            board_set8BitFieldIndex( &board->bitFields.blkDiasUpRight[indexes->diaUpRight], indexes->diaUpRightIndex );
             board_set8BitFieldIndex( &board->bitFields.blkDiasDownRight[indexes->diaDownRight], indexes->diaDownRightIndex );
         }
+        
+        board_set64BitFieldIndex( &board->bitFields.allBoard, i );
+        board_set8BitFieldIndex( &board->bitFields.allRows[indexes->row], indexes->col );
+        board_set8BitFieldIndex( &board->bitFields.allCols[indexes->col], indexes->row );
+        board_set8BitFieldIndex( &board->bitFields.allDiasUpRight[indexes->diaUpRight], indexes->diaUpRightIndex );
+        board_set8BitFieldIndex( &board->bitFields.allDiasDownRight[indexes->diaDownRight], indexes->diaDownRightIndex );
     }
 }
 
