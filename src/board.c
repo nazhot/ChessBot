@@ -421,8 +421,7 @@ static bool board_oppositeKingPressured( Board* const board ) {
     for ( uint index = 0; index < 64; ++index ) {
         IndexTranslation *position = lookup_translateIndex( index );
         Piece piece = board->pieceMap[position->row][position->col];
-        if ( ( piece.isWhite && !board->whiteToMove ) ||
-             ( !piece.isWhite && board->whiteToMove ) ) {
+        if ( ( piece.isWhite != board->whiteToMove ) ) {
             continue;
         }
         moves = 0;
@@ -483,6 +482,10 @@ static CheckType board_moveLeadsToCheck( Board* const board, const Move* const m
     memcpy( lastPieceMap, board->pieceMap, sizeof( Piece ) * 64 );
     board_makeMove( board, move ); //opposite move
     if (  board_oppositeKingPressured( board ) ) {
+        board->whiteToMove = !board->whiteToMove;
+        memcpy( board->pieceMap, lastPieceMap, sizeof( Piece ) * 64 );
+        board_updateBitFieldsFromPieces( board );
+        --board->numPastMoves;
         return CHECK_AGAINST_ME; //move invalid, return without further checks
     }
 
@@ -532,8 +535,7 @@ Move* board_getMovesForCurrentSide( Board* const board, uint* const numMoves, bo
     for ( uint row = 0; row < 8; ++row ) {
         for ( uint col = 0; col < 8; ++col ) {
             captures = 0;
-            if ( ( board->whiteToMove && !board->pieceMap[row][col].isWhite ) ||
-                ( !board->whiteToMove && board->pieceMap[row][col].isWhite ) ) {
+            if ( board->whiteToMove != board->pieceMap[row][col].isWhite ) {
                 continue;
             }
             moves = board_getMoveBitFieldForPiece( board, row, col);
