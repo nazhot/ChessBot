@@ -138,6 +138,10 @@ static void board_updateBitFieldsFromPieces( Board* const board ) {
 }
 
 GameStatus board_makeMove( Board* const board, const Move* const move ) {
+    if ( board->numPastMoves == 256 ) {
+        printf( "Ran out of move spots\n" );
+        exit( 1 );
+    }
     ++board->pieceMap[move->srcRow][move->srcCol].numMoves;
     memcpy( &board->pieceMap[move->dstRow][move->dstCol],
             &board->pieceMap[move->srcRow][move->srcCol], sizeof( Piece ) );
@@ -671,25 +675,6 @@ Move* board_getMovesForOppositeSide( Board* const board, uint* const numMoves ) 
     return moveArray;
 }
 
-static int randomIndex( const uint size ) {
-    if ( ( size - 1 ) == RAND_MAX ) {
-        return rand();
-    }
-    // Supporting larger values for n would requires an even more
-    // elaborate implementation that combines multiple calls to rand()
-    // Chop off all of the values that would cause skew...
-    int end = RAND_MAX / size; // truncate skew
-    assert (end > 0);
-    end *= size;
-
-    // ... and ignore results from rand() that fall above that limit.
-    // (Worst case the loop condition should succeed 50% of the time,
-    // so we can expect to bail out of this loop pretty quickly.)
-    int r;
-    while ((r = rand()) >= end);
-
-    return r % size;
-}
 
 GameStatus board_playGame( MoveDecider whiteMoveDecider, MoveDecider blackMoveDecider ) {
     ChessGame game = { .board = board_initialize(),
@@ -697,12 +682,11 @@ GameStatus board_playGame( MoveDecider whiteMoveDecider, MoveDecider blackMoveDe
                        .numPastMoves = 0 };
     Move decidedMove;
     while ( game.status == GAME_RUNNING ) {
-        board_print( game.board );
-        printf( "%s turn:\n", game.board->whiteToMove ? "White's" : "Black's" );
         decidedMove = game.board->whiteToMove ? whiteMoveDecider( game.board ) :
                                                 blackMoveDecider( game.board );
         game.status = board_makeMove( game.board, &decidedMove );
     }
+    board_print( game.board );
 
     free( game.board );
     return game.status;
