@@ -15,6 +15,13 @@ typedef enum CheckType {
     STALEMATE
 } CheckType;
 
+typedef enum GameStatus {
+    GAME_RUNNING,
+    END_STALEMATE,
+    END_WHITE_WON,
+    END_BLACK_WON
+} GameStatus;
+
 typedef struct IndexTranslation {
     uint index;
     uint row;
@@ -106,9 +113,10 @@ typedef struct Board {
 //contains an entire game, meant to remove the large array from the board
 //for when I start checking lots of moves in the future
 typedef struct ChessGame {
-    Board board;
+    Board *board;
     uint numPastMoves;
     Move pastMoves[512];
+    GameStatus status;
 } ChessGame;
 
 /**
@@ -116,14 +124,17 @@ typedef struct ChessGame {
  *
  * @return newly created Board
  */
+
+typedef Move (MoveDecider)(Board *board );
+
 Board* board_initialize();
 void board_clear( Board* const board );
 Move* board_getMovesForCurrentSide( Board* const board, uint* const numMoves, bool checkForCheck );
 Move* board_getMovesForOppositeSide( Board* const board, uint* const numMoves );
-void board_makeMove( Board* const board, const Move* const move );
+GameStatus board_makeMove( Board* const board, const Move* const move );
 void board_print( const Board* const board );
-void board_decideAndMakeMove( Board *board );
 void board_printBitField( const char bitField, const char *text );
-void board_playGame( Board* const board );
+void board_printMove( const Move* const move );
+GameStatus board_playGame( MoveDecider whiteMoveDecider, MoveDecider blackMoveDecider );
 
 #endif

@@ -137,7 +137,7 @@ static void board_updateBitFieldsFromPieces( Board* const board ) {
     }
 }
 
-void board_makeMove( Board* const board, const Move* const move ) {
+GameStatus board_makeMove( Board* const board, const Move* const move ) {
     ++board->pieceMap[move->srcRow][move->srcCol].numMoves;
     memcpy( &board->pieceMap[move->dstRow][move->dstCol],
             &board->pieceMap[move->srcRow][move->srcCol], sizeof( Piece ) );
@@ -196,9 +196,16 @@ void board_makeMove( Board* const board, const Move* const move ) {
             board->whiteInCheck = false;
         }
     }
+    GameStatus status = GAME_RUNNING;
+    if ( move->checkType == CHECKMATE ) {
+        status = move->whiteMove ? END_WHITE_WON : END_BLACK_WON;
+    } else if ( move->checkType == STALEMATE ) {
+        status = END_STALEMATE;
+    }
     board_updateBitFieldsFromPieces( board );
     memcpy( &board->pastMoves[board->numPastMoves++], move, sizeof( Move ) );
     board->whiteToMove = !board->whiteToMove;
+    return status;
 }
 
 void board_print( const Board* const board ) {
@@ -249,7 +256,7 @@ static void board_printAlgrebraicFromRowCol( const uint row, const uint col ) {
     printf( "%c%u", col + 97, 8 - row );
 }
 
-static void board_printMove( const Move* const move ) {
+void board_printMove( const Move* const move ) {
     static char pieceSymbols[] = { [NONE] = ' ', [PAWN] = 'P', [KNIGHT] = 'N', 
                                    [BISHOP] = 'B', [ROOK] = 'R', [QUEEN] = 'Q',
                                    [KING] = 'K' };
@@ -684,57 +691,19 @@ static int randomIndex( const uint size ) {
     return r % size;
 }
 
-void board_decideAndMakeMove( Board* const board ) {
-    //get all of the moves of the currently moving side
-    //do whatever algorithm to determine which move to do
-    //make the move
-    //update all the pieces within board
-    //update all of the various bit fields within board
-
-
-    uint numMoves = 0;
-    Move *moves;
-    /*
-    board_updateBitFieldsFromPieces( board );
-    moves = board_getMovesForCurrentSide( board, &numMoves );
-    free( moves );
-    return;
-*/
-    int random;
-    for ( uint i = 0; i < 30; ++i ) {
-        numMoves = 0;
-        moves = board_getMovesForCurrentSide( board, &numMoves, true );
-        random = randomIndex( numMoves );
-        board_makeMove( board, &moves[random] );
-        board_printMove( &moves[random] );
-        board_print( board );
-        free( moves );
+GameStatus board_playGame( MoveDecider whiteMoveDecider, MoveDecider blackMoveDecider ) {
+    ChessGame game = { .board = board_initialize(),
+                       .status = GAME_RUNNING,
+                       .numPastMoves = 0 };
+    Move decidedMove;
+    while ( game.status == GAME_RUNNING ) {
+        board_print( game.board );
+        printf( "%s turn:\n", game.board->whiteToMove ? "White's" : "Black's" );
+        decidedMove = game.board->whiteToMove ? whiteMoveDecider( game.board ) :
+                                                blackMoveDecider( game.board );
+        game.status = board_makeMove( game.board, &decidedMove );
     }
-}
 
-void board_playGame( Board* const board ) {
-    uint numMoves;
-    Move *moves;
-    while ( true ) {
-        numMoves = 0;
-        board_print( board );
-        printf( "%s turn:\n", board->whiteToMove ? "White's" : "Black's" );
-        moves = board_getMovesForCurrentSide( board, &numMoves, true );
-        for ( uint i = 0; i < numMoves; ++i ) {
-            printf( "%u: ", i );
-            board_printMove( &moves[i] );
-        }
-        uint index = numMoves;
-        char buffer[5];
-        while ( index >= numMoves ) {
-            printf( "\nChoose an index from 0-%u: ", numMoves - 1 );
-            fgets( buffer, 5, stdin );
-            index = atoi( buffer );
-        }
-        board_printMove( &moves[index] );
-        printf( "White king pos: (%u, %u)\n", board->whiteKing.row, board->whiteKing.col );
-        printf( "Black king pos: (%u, %u)\n", board->blackKing.row, board->blackKing.col );
-        board_makeMove( board, &moves[index] );
-        free( moves );
-    }
+    free( game.board );
+    return game.status;
 }
