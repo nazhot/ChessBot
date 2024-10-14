@@ -57,7 +57,6 @@ typedef enum MoveDirection {
 //to see what, if anything, should change/be added.
 typedef struct Move {
     bool whiteMove;
-    char algebraicNotation[10];
     PieceType pieceType;
     MoveType moveType;
     CaptureType captureType;
@@ -66,10 +65,10 @@ typedef struct Move {
         MoveDirection castleDirection;
         PieceType promotionType; 
     };
-    uint dstRow;
-    uint dstCol;
-    uint srcRow;
-    uint srcCol;
+    uint dstRow: 4;
+    uint dstCol: 4;
+    uint srcRow: 4;
+    uint srcCol: 4;
     CheckType checkType;
 } Move;
 
@@ -108,7 +107,6 @@ typedef struct Board {
     Move lastMove;
     IndexTranslation whiteKing;
     IndexTranslation blackKing;
-    bool gameOver;
 } Board; 
 
 //contains an entire game, meant to remove the large array from the board
