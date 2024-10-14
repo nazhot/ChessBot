@@ -6,6 +6,7 @@
 #include <stdbool.h>
 #include "pieces.h"
 
+#define GAME_MAX_MOVES 1024
 
 typedef enum CheckType {
     NO_CHECK,
@@ -19,7 +20,8 @@ typedef enum GameStatus {
     GAME_RUNNING,
     END_STALEMATE,
     END_WHITE_WON,
-    END_BLACK_WON
+    END_BLACK_WON,
+    END_MAX_MOVES
 } GameStatus;
 
 typedef struct IndexTranslation {
@@ -103,8 +105,7 @@ typedef struct Board {
     bool whiteToMove; 
     bool whiteInCheck;
     bool blackInCheck;
-    Move pastMoves[256];
-    uint numPastMoves;
+    Move lastMove;
     IndexTranslation whiteKing;
     IndexTranslation blackKing;
     bool gameOver;
@@ -115,7 +116,7 @@ typedef struct Board {
 typedef struct ChessGame {
     Board *board;
     uint numPastMoves;
-    Move pastMoves[512];
+    Move pastMoves[GAME_MAX_MOVES];
     GameStatus status;
 } ChessGame;
 

@@ -64,7 +64,6 @@ Board* board_initialize() {
     board->pieceMap[7][5] = initializePiece( BISHOP, true );
     board->pieceMap[7][6] = initializePiece( KNIGHT, true );
     board->pieceMap[7][7] = initializePiece( ROOK, true );
-    board->numPastMoves = 0;
     board->whiteInCheck = false;
     board->blackInCheck = false;
     board->gameOver = false;
@@ -138,11 +137,8 @@ static void board_updateBitFieldsFromPieces( Board* const board ) {
 }
 
 GameStatus board_makeMove( Board* const board, const Move* const move ) {
-    if ( board->numPastMoves == 256 ) {
-        printf( "Ran out of move spots\n" );
-        exit( 1 );
-    }
     ++board->pieceMap[move->srcRow][move->srcCol].numMoves;
+    memcpy( &board->lastMove, move, sizeof( Move ) );
     memcpy( &board->pieceMap[move->dstRow][move->dstCol],
             &board->pieceMap[move->srcRow][move->srcCol], sizeof( Piece ) );
     board->pieceMap[move->srcRow][move->srcCol].type = NONE;
@@ -207,7 +203,6 @@ GameStatus board_makeMove( Board* const board, const Move* const move ) {
         status = END_STALEMATE;
     }
     board_updateBitFieldsFromPieces( board );
-    memcpy( &board->pastMoves[board->numPastMoves++], move, sizeof( Move ) );
     board->whiteToMove = !board->whiteToMove;
     return status;
 }
@@ -291,57 +286,6 @@ void board_printMove( const Move* const move ) {
 }
 
 static void board_undoMove( Board* const board ) {
-    if ( board->numPastMoves == 0 ){
-        return;
-    }
-    Move lastMove = board->pastMoves[--board->numPastMoves];
-    --board->pieceMap[lastMove.dstRow][lastMove.dstCol].numMoves;
-    memcpy( &board->pieceMap[lastMove.srcRow][lastMove.srcCol],
-            &board->pieceMap[lastMove.dstRow][lastMove.dstCol], sizeof( Piece ) );
-    board->pieceMap[lastMove.dstRow][lastMove.dstCol].type = NONE;
-    //update king's position in board
-    if ( lastMove.pieceType == KING ) {
-        if ( lastMove.whiteMove ) {
-            board->whiteKing = *lookup_translateIndex( lastMove.srcRow * 8 + lastMove.srcCol );
-        } else {
-            board->blackKing = *lookup_translateIndex( lastMove.srcRow * 8 + lastMove.srcCol );
-        }
-    }
-    switch ( lastMove.moveType ) {
-        case MOVE_CASTLE:
-            if ( lastMove.castleDirection == DIRECTION_LEFT ) {
-                //king is taken care of with upper code
-                //rook
-                memcpy( &board->pieceMap[lastMove.srcRow][0], &board->pieceMap[lastMove.srcRow][3],
-                       sizeof( Piece ) );
-                board->pieceMap[lastMove.srcRow][0].type = ROOK; //remove rook
-                --board->pieceMap[lastMove.srcRow][0].numMoves; //increment rook moves
-            } else {
-                //king is taken care of with upper code
-                //rook
-                memcpy( &board->pieceMap[lastMove.srcRow][7], &board->pieceMap[lastMove.srcRow][5],
-                       sizeof( Piece ) );
-                board->pieceMap[lastMove.srcRow][7].type = ROOK; //remove rook
-                --board->pieceMap[lastMove.srcRow][7].numMoves; //increment rook moves
-            }
-            break;
-        case MOVE_CAPTURE:
-            if ( lastMove.captureType == CAPTURE_EN_PASSANT ) {
-                board->pieceMap[lastMove.srcRow][lastMove.dstCol].type = lastMove.pieceCaptured; //captured piece
-            } else {
-                board->pieceMap[lastMove.dstRow][lastMove.dstCol].type = lastMove.pieceCaptured;
-            }
-            break;
-        case MOVE_PROMOTION:
-            board->pieceMap[lastMove.srcRow][lastMove.srcCol].type = PAWN;
-            break;
-        default:
-            break;
-    }
-
-    board->whiteToMove = !board->whiteToMove;
-
-    board_updateBitFieldsFromPieces( board );
 }
 
 //currently does not check for if the pawn is at the end of the board, the pawn should
@@ -359,7 +303,7 @@ static void board_addPawnCaptures( Board* const board, uint64_t* const captures,
             *captures ^= ( ( uint64_t ) 1 << ( 63 - ( index + diaLeftOffset ) ) );
             *moves ^= ( ( uint64_t ) 1 << ( 63 - ( index + diaLeftOffset ) ) );
         } else if ( row == enPassantRow && ( opponentPieceBitMap >> ( 63 - ( index - 1 ) ) & 1 ) ) {
-            Move lastMove = board->pastMoves[board->numPastMoves - 1];
+            Move lastMove = board->lastMove;
             if ( lastMove.pieceType == PAWN && lastMove.srcCol == col - 1 && 
                  ( abs( ( int ) lastMove.dstRow - ( int ) lastMove.srcRow ) == 2 ) ) {
                 *captures ^= ( ( uint64_t ) 1 << ( 63 - ( index + diaLeftOffset ) ) );
@@ -373,7 +317,7 @@ static void board_addPawnCaptures( Board* const board, uint64_t* const captures,
             *captures ^= ( ( uint64_t ) 1 << ( 63 - ( index + diaRightOffset ) ) );
             *moves ^= ( ( uint64_t ) 1 << ( 63 - ( index + diaRightOffset ) ) );
         } else if ( row == enPassantRow && ( opponentPieceBitMap >> ( 63 - ( index + 1 ) ) & 1 ) ) {
-            Move lastMove = board->pastMoves[board->numPastMoves - 1];
+            Move lastMove = board->lastMove;
             if ( lastMove.pieceType == PAWN && lastMove.srcCol == col + 1 && 
                  ( abs( ( int ) lastMove.dstRow - ( int ) lastMove.srcRow ) == 2 ) ) {
                 *captures ^= ( ( uint64_t ) 1 << ( 63 - ( index + diaRightOffset ) ) );
@@ -490,13 +434,14 @@ static CheckType board_moveLeadsToCheck( Board* const board, const Move* const m
     }
     CheckType checkType = NO_CHECK;
     Piece lastPieceMap[8][8] = {0};
+    Move lastMove = board->lastMove;
     memcpy( lastPieceMap, board->pieceMap, sizeof( Piece ) * 64 );
     board_makeMove( board, move ); //opposite move
     if (  board_oppositeKingPressured( board ) ) {
         board->whiteToMove = !board->whiteToMove;
         memcpy( board->pieceMap, lastPieceMap, sizeof( Piece ) * 64 );
+        board->lastMove = lastMove;
         board_updateBitFieldsFromPieces( board );
-        --board->numPastMoves;
         return CHECK_AGAINST_ME; //move invalid, return without further checks
     }
 
@@ -509,6 +454,7 @@ static CheckType board_moveLeadsToCheck( Board* const board, const Move* const m
     uint numMoves = 0;
     Move *nextMoves = board_getMovesForCurrentSide( board, &numMoves, false );
     Piece tempPieceMap[8][8] = {0};
+    Move tempLastMove = board->lastMove;
     memcpy( tempPieceMap, board->pieceMap, sizeof( Piece ) * 64 );
     bool hasValidMove = false;
     for ( uint i = 0; i < numMoves; ++i ) {
@@ -516,7 +462,7 @@ static CheckType board_moveLeadsToCheck( Board* const board, const Move* const m
         //current turn is what it was in the beginning of the function
         hasValidMove = !board_oppositeKingPressured( board ); 
         memcpy( board->pieceMap, tempPieceMap, sizeof( Piece ) * 64 );
-        --board->numPastMoves;
+        board->lastMove = tempLastMove;
         board_updateBitFieldsFromPieces( board );
         board->whiteToMove = !board->whiteToMove;
 
@@ -528,7 +474,7 @@ static CheckType board_moveLeadsToCheck( Board* const board, const Move* const m
     free( nextMoves );
 
     memcpy( board->pieceMap, lastPieceMap, sizeof( Piece ) * 64 );
-    --board->numPastMoves;
+    board->lastMove = lastMove;
     board_updateBitFieldsFromPieces( board );
     board->whiteToMove = !board->whiteToMove;
     if ( !hasValidMove ) {
@@ -682,9 +628,14 @@ GameStatus board_playGame( MoveDecider whiteMoveDecider, MoveDecider blackMoveDe
                        .numPastMoves = 0 };
     Move decidedMove;
     while ( game.status == GAME_RUNNING ) {
+        if ( game.numPastMoves == GAME_MAX_MOVES ) {
+            game.status = END_MAX_MOVES;
+            break;
+        }
         decidedMove = game.board->whiteToMove ? whiteMoveDecider( game.board ) :
                                                 blackMoveDecider( game.board );
         game.status = board_makeMove( game.board, &decidedMove );
+        memcpy( &game.pastMoves[game.numPastMoves++], &decidedMove, sizeof( Move ) );
     }
     board_print( game.board );
 

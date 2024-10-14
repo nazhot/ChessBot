@@ -106,6 +106,8 @@ int main( int argc, char *argv[] ) {
         printf( "White won!!!\n" );
     } else if ( status == END_STALEMATE ) {
         printf( "Draw!!!\n" );
+    } else if ( status == END_MAX_MOVES ) {
+        printf( "Draw, MAX moves!!\n" );
     }
 /*
     Board *testBoard = board_initialize();
