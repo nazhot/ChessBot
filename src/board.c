@@ -331,6 +331,8 @@ static void board_addPawnCaptures( Board* const board, uint64_t* const captures,
 static bool board_checkCastle( Board* const board, const MoveDirection direction ) {
     bool isWhite = board->whiteToMove;
     uint checkRow = isWhite ? 7 : 0;
+    uint64_t boardPressures = isWhite ? board->bitFields.blkBoardPressures :
+                                       board->bitFields.whtBoardPressures;
     uint rookCheckCol = direction == DIRECTION_LEFT ? 0 : 7;
     uint blockCheckCol1 = direction == DIRECTION_LEFT ? 1 : 6;
     uint blockCheckCol2 = direction == DIRECTION_LEFT ? 2 : 5;
@@ -343,6 +345,8 @@ static bool board_checkCastle( Board* const board, const MoveDirection direction
              board->pieceMap[checkRow][rookCheckCol].numMoves == 0 &&
              board->pieceMap[checkRow][blockCheckCol1].type == NONE &&
              board->pieceMap[checkRow][blockCheckCol2].type == NONE &&
+             //check to make sure king doesn't pass through check
+             !( boardPressures >> ( checkRow * 8 + blockCheckCol1 ) & 1 ) && 
              ( direction == DIRECTION_RIGHT || 
                board->pieceMap[checkRow][blockCheckCol3].type == NONE ) );
 }
