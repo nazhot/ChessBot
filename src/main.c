@@ -97,7 +97,7 @@ int main( int argc, char *argv[] ) {
     //int serverFD = server_startLocal();
     //server_listen();
     initializeLookupTables();
-
+    
 
     GameStatus status = board_playGame( captureHeavy, randomMove );
     if ( status == END_BLACK_WON ) {
@@ -109,17 +109,6 @@ int main( int argc, char *argv[] ) {
     } else if ( status == END_MAX_MOVES ) {
         printf( "Draw, MAX moves!!\n" );
     }
-/*
-    Board *testBoard = board_initialize();
-    for ( uint i = 0; i < 8; ++i ) {
-        for ( uint j = 0; j < 8; ++j ) {
-            board_clear( testBoard );
-            testBoard->pieceMap[i][j].type = QUEEN;
-            testBoard->pieceMap[i][j].isWhite = true;
-            board_decideAndMakeMove( testBoard );
-        }
-    }
-*/  
 
     return 0;
 }

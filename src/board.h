@@ -83,6 +83,9 @@ typedef struct Board {
         uint64_t allBoard;
         uint64_t whtBoard;
         uint64_t blkBoard;
+        
+        uint64_t whtBoardPressures;
+        uint64_t blkBoardPressures;
 
         unsigned char allRows[8];
         unsigned char allCols[8];

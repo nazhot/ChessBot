@@ -8,6 +8,8 @@
 #include <string.h>
 
 static void board_updateBitFieldsFromPieces( Board *board );
+static uint64_t board_getMoveBitFieldForPiece( Board* const board, const uint row,
+                                               const uint col );
 
 void board_printBitField( const char bitField, const char *text ) {
     printf( "%s: ", text );
@@ -66,10 +68,12 @@ Board* board_initialize() {
     board->pieceMap[7][7] = initializePiece( ROOK, true );
     board->whiteInCheck = false;
     board->blackInCheck = false;
-    board->gameOver = false;
 
     board->blackKing = *lookup_translateIndex( 4 );
     board->whiteKing = *lookup_translateIndex( 60 );
+
+    board->bitFields.whtBoardPressures = 0;
+    board->bitFields.blkBoardPressures = 0;
 
     for ( uint row = 2; row < 6; ++row ) {
         for ( uint col = 0; col < 8; ++col ) {
@@ -120,12 +124,14 @@ static void board_updateBitFieldsFromPieces( Board* const board ) {
             board_set8BitFieldIndex( &board->bitFields.whtCols[indexes->col], indexes->row );
             board_set8BitFieldIndex( &board->bitFields.whtDiasUpRight[indexes->diaUpRight], indexes->diaUpRightIndex );
             board_set8BitFieldIndex( &board->bitFields.whtDiasDownRight[indexes->diaDownRight], indexes->diaDownRightIndex );
+            board->bitFields.whtBoardPressures |= board_getMoveBitFieldForPiece( board, indexes->row, indexes->col );
         } else {
             board_set64BitFieldIndex( &board->bitFields.blkBoard, i );
             board_set8BitFieldIndex( &board->bitFields.blkRows[indexes->row], indexes->col );
             board_set8BitFieldIndex( &board->bitFields.blkCols[indexes->col], indexes->row );
             board_set8BitFieldIndex( &board->bitFields.blkDiasUpRight[indexes->diaUpRight], indexes->diaUpRightIndex );
             board_set8BitFieldIndex( &board->bitFields.blkDiasDownRight[indexes->diaDownRight], indexes->diaDownRightIndex );
+            board->bitFields.whtBoardPressures |= board_getMoveBitFieldForPiece( board, indexes->row, indexes->col );
         }
         
         board_set64BitFieldIndex( &board->bitFields.allBoard, i );
@@ -185,11 +191,7 @@ GameStatus board_makeMove( Board* const board, const Move* const move ) {
         } else {
             board->whiteInCheck = true;
         }
-    } else if ( move->checkType == CHECKMATE ) {
-        board->gameOver = true;
-    } else if ( move->checkType == STALEMATE ) {
-
-    }else {
+    } else {
         if ( move->whiteMove ) {
             board->blackInCheck = false;
         } else {
