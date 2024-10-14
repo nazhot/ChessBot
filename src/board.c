@@ -347,6 +347,8 @@ static bool board_checkCastle( Board* const board, const MoveDirection direction
              board->pieceMap[checkRow][blockCheckCol2].type == NONE &&
              //check to make sure king doesn't pass through check
              !( boardPressures >> ( checkRow * 8 + blockCheckCol1 ) & 1 ) && 
+             //check to make sure king is not in check
+             !( boardPressures >> ( checkRow * 8 + 4 ) & 1 ) &&
              ( direction == DIRECTION_RIGHT || 
                board->pieceMap[checkRow][blockCheckCol3].type == NONE ) );
 }
